@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Voice Chatbot</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-robot"></i>
+                <h1>AI Voice Assistant</h1>
+            </div>
+            <div class="status-indicator">
+                <span id="status-text">Ready</span>
+                <div id="status-dot" class="status-dot"></div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message bot-message">
+                        <div class="message-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="message-content">
+                            <p>Hello! I'm your AI voice assistant. I can help you with various tasks like checking the weather, telling time, playing music, getting news, and telling jokes. How can I assist you today?</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-section">
+                    <div class="text-input-container">
+                        <input type="text" id="text-input" placeholder="Type your message here..." class="text-input">
+                        <button id="send-btn" class="send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="voice-controls">
+                        <div class="recording-timer" id="recording-timer" style="display: none;">
+                            <i class="fas fa-clock"></i>
+                            <span id="timer-display">00:00</span>
+                        </div>
+                        <button id="voice-btn" class="voice-btn">
+                            <i class="fas fa-microphone"></i>
+                            <span>Start Voice</span>
+                        </button>
+                        <button id="stop-voice-btn" class="stop-voice-btn" style="display: none;">
+                            <i class="fas fa-stop"></i>
+                            <span>Stop Voice</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Quick Actions</h3>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" data-action="time">
+                            <i class="fas fa-clock"></i>
+                            <span>What time is it?</span>
+                        </button>
+                        <button class="quick-action-btn" data-action="weather">
+                            <i class="fas fa-cloud-sun"></i>
+                            <span>Weather info</span>
+                        </button>
+                        <button class="quick-action-btn" data-action="joke">
+                            <i class="fas fa-laugh"></i>
+                            <span>Tell me a joke</span>
+                        </button>
+                        <button class="quick-action-btn" data-action="help">
+                            <i class="fas fa-question-circle"></i>
+                            <span>What can you do?</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Conversation Stats</h3>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Messages:</span>
+                            <span id="message-count" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Status:</span>
+                            <span id="listening-status" class="stat-value">Idle</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Voice Settings</h3>
+                    <div class="settings">
+                        <div class="setting-item">
+                            <label for="voice-speed">Speed:</label>
+                            <input type="range" id="voice-speed" min="0.5" max="2" step="0.1" value="1">
+                            <span id="speed-value">1x</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="voice-volume">Volume:</label>
+                            <input type="range" id="voice-volume" min="0" max="1" step="0.1" value="0.9">
+                            <span id="volume-value">90%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="voice-visualizer" id="voice-visualizer">
+        <div class="visualizer-bars">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

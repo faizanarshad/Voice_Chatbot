@@ -1,0 +1,32 @@
+# Voice Chatbot Configuration
+# Copy this file to .env and update with your values
+
+# Flask Configuration
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+PORT=5001
+
+# Text-to-Speech Settings
+TTS_RATE=150
+TTS_VOLUME=1.0
+TTS_VOICE_ID=
+
+# LLM Integration Settings
+USE_LLM=false
+ACTIVE_LLM=openai
+
+# OpenAI Configuration
+OPENAI_API_KEY=your-openai-api-key-here
+
+# Anthropic Configuration
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
+
+# Ollama Configuration (Local LLM)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama2
+
+# Weather API (Optional)
+WEATHER_API_KEY=your-weather-api-key-here
+
+# News API (Optional)
+NEWS_API_KEY=your-news-api-key-here
