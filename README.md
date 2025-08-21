@@ -1,15 +1,16 @@
 # AI Voice Chatbot
 
-A sophisticated voice-enabled chatbot powered by advanced Natural Language Processing (NLP) and speech recognition technologies. This application provides a modern, responsive web interface for voice and text interactions with an AI assistant.
+A sophisticated voice-enabled chatbot powered by advanced Natural Language Processing (NLP) and speech recognition technologies. This application provides a modern, responsive web interface for voice and text interactions with an AI assistant, with optional integration of Large Language Models (LLMs) for enhanced conversational capabilities.
 
 ## 🌟 Features
 
 ### Core Capabilities
 - **Voice Recognition**: Real-time speech-to-text conversion using Google Speech Recognition
-- **Text-to-Speech**: Natural-sounding voice responses with customizable settings
+- **Text-to-Speech**: Natural-sounding voice responses with 177+ available voices
 - **Advanced NLP**: Intent recognition, entity extraction, and sentiment analysis
 - **Context Awareness**: Maintains conversation context and user preferences
 - **Multi-modal Interface**: Both voice and text input/output support
+- **LLM Integration**: Optional integration with OpenAI GPT, Anthropic Claude, or local Ollama models
 
 ### Intelligent Features
 - **Intent Recognition**: Understands user intentions (greetings, weather, time, music, etc.)
@@ -17,7 +18,7 @@ A sophisticated voice-enabled chatbot powered by advanced Natural Language Proce
 - **Sentiment Analysis**: Analyzes user mood and adjusts responses accordingly
 - **Conversation Memory**: Tracks conversation history and user preferences
 - **Confidence Scoring**: Provides confidence levels for NLP analysis
-- **LLM Integration**: Optional integration with OpenAI GPT, Anthropic Claude, or local Ollama models
+- **Advanced LLM Responses**: Context-aware, intelligent responses when LLM is enabled
 
 ### User Interface
 - **Modern Design**: Beautiful, responsive web interface with glassmorphism effects
@@ -38,7 +39,7 @@ A sophisticated voice-enabled chatbot powered by advanced Natural Language Proce
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/Voice_Chatbot.git
+   git clone https://github.com/faizanarshad/Voice_Chatbot.git
    cd Voice_Chatbot
    ```
 
@@ -53,10 +54,10 @@ A sophisticated voice-enabled chatbot powered by advanced Natural Language Proce
    pip install -r requirements.txt
    ```
 
-4. **Set up environment variables** (optional)
+4. **Set up environment variables**
    ```bash
-   cp .env.example .env
-   # Edit .env file with your API keys and preferences
+   cp env_example.txt .env
+   # Edit .env file with your preferences (optional API keys)
    ```
 
 5. **Run the application**
@@ -114,7 +115,13 @@ Voice_Chatbot/
 ├── config.py              # Configuration management
 ├── requirements.txt       # Python dependencies
 ├── README.md             # This file
-├── .env.example          # Environment variables template
+├── LLM_SETUP.md          # LLM integration guide
+├── SETUP_COMPLETE.md     # Setup completion guide
+├── setup_llm.py          # Interactive LLM setup script
+├── enable_llm.py         # LLM enablement utilities
+├── test_setup.py         # Setup verification and diagnostics
+├── env_example.txt       # Environment variables template
+├── .gitignore            # Git ignore rules
 ├── templates/
 │   └── index.html        # Main web interface
 └── static/
@@ -151,8 +158,14 @@ TTS_VOICE_ID=
 NLP_CONFIDENCE_THRESHOLD=0.7
 NLP_MAX_CONVERSATION_HISTORY=50
 
-# Optional API Keys (for enhanced features)
+# LLM Integration (Optional)
+USE_LLM=false
+ACTIVE_LLM=openai
 OPENAI_API_KEY=
+ANTHROPIC_API_KEY=
+OLLAMA_MODEL=llama2
+
+# Optional API Keys (for enhanced features)
 WEATHER_API_KEY=
 NEWS_API_KEY=
 
@@ -169,6 +182,7 @@ Control which features are enabled:
 ENABLE_VOICE_RECOGNITION=True
 ENABLE_TEXT_TO_SPEECH=True
 ENABLE_ADVANCED_NLP=True
+ENABLE_LLM=False
 ENABLE_WEATHER_API=False
 ENABLE_NEWS_API=False
 ```
@@ -213,6 +227,11 @@ Adjust voice settings in the sidebar:
 - `GET /api/conversation-summary` - Get analytics summary
 - `GET/POST /api/user-preferences` - Manage user preferences
 - `POST /api/nlp-analysis` - Analyze text with NLP
+
+### LLM Endpoints (when enabled)
+- `POST /api/llm/chat` - Send message to LLM
+- `GET /api/llm/status` - Check LLM connection status
+- `POST /api/llm/configure` - Update LLM settings
 
 ## 🧠 NLP Capabilities
 
@@ -260,6 +279,11 @@ Analyzes user sentiment and adjusts responses:
 2. Modify `templates/index.html` for layout
 3. Update `static/js/app.js` for functionality
 
+### LLM Customization
+1. Modify system prompts in `nlp_engine.py`
+2. Adjust LLM parameters in `config.py`
+3. Customize response formatting
+
 ## 🚀 Deployment
 
 ### Local Development
@@ -303,6 +327,12 @@ CMD ["python", "app.py"]
 - Verify audio output settings
 - Adjust TTS volume in settings
 
+**LLM integration problems:**
+- Verify API keys are correct
+- Check internet connection for cloud LLMs
+- Ensure Ollama is running for local models
+- Run `python test_setup.py` for diagnostics
+
 **Installation problems:**
 - Ensure Python 3.8+ is installed
 - Use virtual environment
@@ -323,6 +353,18 @@ brew install portaudio
 **Windows:**
 - PyAudio should install automatically with pip
 
+### Setup Verification
+Run the built-in diagnostics:
+```bash
+python test_setup.py
+```
+
+This will check:
+- Python version and dependencies
+- Audio system configuration
+- LLM connectivity (if enabled)
+- Web interface accessibility
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -340,6 +382,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Google Speech Recognition API
 - pyttsx3 for text-to-speech
 - Flask web framework
+- OpenAI, Anthropic, and Ollama for LLM capabilities
 - Modern CSS and JavaScript libraries
 
 ## 📞 Support
@@ -348,6 +391,7 @@ For support and questions:
 - Create an issue on GitHub
 - Check the troubleshooting section
 - Review the configuration options
+- Run `python test_setup.py` for diagnostics
 
 ---
 
