@@ -284,7 +284,9 @@ class NLPEngine:
             'calculation': [
                 r'\b(calculate|math|add|subtract|multiply|divide|compute)\b',
                 r'\b(what is|how much is|solve|equation|formula|percentage)\b',
-                r'\b(plus|minus|times|divided by|sum|total|average)\b'
+                r'\b(plus|minus|times|divided by|sum|total|average)\b',
+                r'\b(help with|need help with|assist with)\s+(?:math|calculations|computations)\b',
+                r'\b(calculation|computation|mathematics|arithmetic)\b'
             ],
             'conversation': [
                 r'\b(talk|chat|conversation|discuss|tell me|share)\b',
@@ -433,6 +435,229 @@ class NLPEngine:
     def _get_personal_info(self) -> str:
         """Get personal information about the assistant"""
         return "I'm your AI voice assistant, designed to help you with various tasks like checking weather, getting news, telling jokes, and answering questions. I'm here to make your day easier and more enjoyable!"
+    
+    def _get_advanced_question_response(self, entities: Dict = None) -> str:
+        """Generate detailed response for advanced questions"""
+        # Get the user's question from conversation history
+        user_question = ""
+        if self.conversation_history:
+            user_question = self.conversation_history[-1].get('text', '')
+        
+        if not user_question:
+            return "I'd be happy to explain that in detail! This is a complex topic that I can break down for you in simple terms."
+        
+        # Analyze the question and provide relevant information
+        question_lower = user_question.lower()
+        
+        # Quantum Computing
+        if 'quantum' in question_lower and 'computing' in question_lower:
+            return """Quantum computing is a revolutionary technology that uses quantum mechanics principles to process information. Here's what makes it special:
+
+🔬 **Key Concepts:**
+• **Qubits**: Unlike classical bits (0 or 1), qubits can exist in multiple states simultaneously
+• **Superposition**: Qubits can be in multiple states at once, enabling parallel processing
+• **Entanglement**: Qubits can be connected, allowing instant information sharing
+
+⚡ **Differences from Classical Computing:**
+• **Speed**: Can solve certain problems exponentially faster
+• **Parallelism**: Processes multiple possibilities simultaneously
+• **Applications**: Cryptography, drug discovery, optimization problems
+
+🚀 **Current Status**: Still in early development, with companies like IBM, Google, and Microsoft leading research."""
+        
+        # Artificial Intelligence & Machine Learning
+        elif any(word in question_lower for word in ['artificial intelligence', 'ai', 'machine learning', 'ml']):
+            return """Artificial Intelligence (AI) and Machine Learning (ML) are transforming our world! Here's the breakdown:
+
+🧠 **Artificial Intelligence:**
+• **Definition**: Computer systems that can perform tasks requiring human intelligence
+• **Types**: Narrow AI (specific tasks) vs General AI (human-like intelligence)
+• **Applications**: Virtual assistants, recommendation systems, autonomous vehicles
+
+📊 **Machine Learning:**
+• **How it works**: Algorithms learn patterns from data without explicit programming
+• **Types**: Supervised, unsupervised, and reinforcement learning
+• **Examples**: Image recognition, language translation, fraud detection
+
+💡 **Real-world Impact**: Healthcare diagnostics, financial analysis, personalized education, and much more!"""
+        
+        # Blockchain Technology
+        elif 'blockchain' in question_lower:
+            return """Blockchain is a revolutionary distributed ledger technology! Here's what you need to know:
+
+🔗 **What is Blockchain:**
+• **Structure**: A chain of blocks containing transaction data
+• **Decentralization**: No single authority controls the network
+• **Transparency**: All transactions are visible to network participants
+
+🔐 **Key Features:**
+• **Immutability**: Once recorded, data cannot be altered
+• **Security**: Cryptographic protection against tampering
+• **Trust**: Eliminates need for intermediaries
+
+🌐 **Applications:**
+• **Cryptocurrencies**: Bitcoin, Ethereum, and thousands more
+• **Supply Chain**: Tracking products from origin to consumer
+• **Voting Systems**: Secure, transparent elections
+• **Smart Contracts**: Self-executing agreements"""
+        
+        # General Science & Technology
+        elif any(word in question_lower for word in ['physics', 'chemistry', 'biology', 'engineering', 'technology', 'science']):
+            return """That's a fascinating scientific question! Science and technology are constantly evolving fields that shape our understanding of the universe.
+
+🔬 **Scientific Method**: Observation → Hypothesis → Experiment → Analysis → Conclusion
+
+🌍 **Key Areas:**
+• **Physics**: Understanding matter, energy, and the fundamental forces
+• **Chemistry**: Composition, properties, and reactions of substances
+• **Biology**: Study of living organisms and life processes
+• **Engineering**: Applying scientific principles to solve practical problems
+
+💡 **Why it matters**: Scientific discoveries lead to technological innovations that improve our lives, from medical breakthroughs to renewable energy solutions."""
+        
+        # Business & Economics
+        elif any(word in question_lower for word in ['business', 'economics', 'finance', 'market', 'entrepreneurship']):
+            return """Business and economics are fascinating fields that drive our global economy! Here's what makes them important:
+
+💼 **Business Fundamentals:**
+• **Value Creation**: Meeting customer needs while generating profit
+• **Innovation**: Developing new products, services, and processes
+• **Competition**: Driving efficiency and improvement
+
+📈 **Economics Principles:**
+• **Supply & Demand**: Basic market dynamics
+• **Opportunity Cost**: What you give up to choose something else
+• **Market Efficiency**: How well markets allocate resources
+
+🚀 **Modern Trends**: Digital transformation, sustainability, globalization, and the gig economy are reshaping business models."""
+        
+        # Health & Medicine
+        elif any(word in question_lower for word in ['health', 'medicine', 'medical', 'wellness', 'fitness']):
+            return """Health and medicine are crucial for human well-being! Here's what's important to know:
+
+🏥 **Modern Medicine:**
+• **Prevention**: Vaccines, screenings, and lifestyle medicine
+• **Treatment**: Evidence-based therapies and personalized medicine
+• **Technology**: AI diagnostics, telemedicine, and medical devices
+
+💪 **Wellness Factors:**
+• **Physical**: Exercise, nutrition, and sleep
+• **Mental**: Stress management, mindfulness, and social connections
+• **Environmental**: Clean air, water, and safe living conditions
+
+🔬 **Current Advances**: Gene therapy, immunotherapy, and precision medicine are revolutionizing treatment options."""
+        
+        # Philosophy & Ethics
+        elif any(word in question_lower for word in ['philosophy', 'ethics', 'morality', 'consciousness', 'existence']):
+            return """Philosophy and ethics explore the deepest questions about human existence and morality! Here are some key areas:
+
+🤔 **Core Questions:**
+• **Metaphysics**: What is reality? What exists?
+• **Epistemology**: How do we know what we know?
+• **Ethics**: What is right and wrong? How should we live?
+
+🧠 **Consciousness Studies:**
+• **The Hard Problem**: How does physical brain activity create subjective experience?
+• **Artificial Consciousness**: Can machines be truly conscious?
+• **Free Will**: Do we have genuine choice or is everything determined?
+
+💭 **Modern Relevance**: These questions influence AI development, bioethics, and our understanding of human nature."""
+        
+        # Default response for other advanced questions
+        else:
+            return """That's an excellent question that deserves a thoughtful answer! I can provide you with:
+
+📚 **Comprehensive Information**: Detailed explanations with key concepts
+🔍 **Real-world Examples**: Practical applications and current developments
+💡 **Key Insights**: Important points to remember
+🚀 **Future Trends**: What's coming next in this field
+
+Would you like me to focus on any specific aspect of this topic, or would you prefer a general overview?"""
+    
+    def _get_enhanced_weather_response(self, entities: Dict = None) -> str:
+        """Generate enhanced weather response with current information"""
+        now = datetime.now()
+        current_time = now.strftime('%I:%M %p')
+        current_date = now.strftime('%A, %B %d')
+        
+        # Get current weather context based on time
+        if 6 <= now.hour < 12:
+            time_context = "Good morning! It's a perfect time to check the weather for your day ahead."
+        elif 12 <= now.hour < 17:
+            time_context = "Good afternoon! Let's see what the weather has in store for the rest of your day."
+        elif 17 <= now.hour < 21:
+            time_context = "Good evening! Perfect timing to check the weather for your evening plans."
+        else:
+            time_context = "Good night! Let's check the weather for tomorrow's planning."
+        
+        return f"""{time_context}
+
+🌤️ **Weather Information Available:**
+• **Current Conditions**: Temperature, humidity, wind speed, and visibility
+• **Hourly Forecast**: Detailed predictions for the next 24 hours
+• **Daily Forecast**: 7-day outlook with high/low temperatures
+• **Special Alerts**: Severe weather warnings and advisories
+• **Air Quality**: Pollen count, air pollution levels, and UV index
+
+⏰ **Current Time**: {current_time} on {current_date}
+
+📍 **Ready to Check**: Just tell me which city or location you'd like weather information for!"""
+    
+    def _get_enhanced_news_response(self, entities: Dict = None) -> str:
+        """Generate enhanced news response with current information"""
+        now = datetime.now()
+        current_time = now.strftime('%I:%M %p')
+        current_date = now.strftime('%A, %B %d')
+        
+        # Get current news context based on time
+        if 6 <= now.hour < 12:
+            time_context = "Good morning! Let's catch up on the latest news to start your day informed."
+        elif 12 <= now.hour < 17:
+            time_context = "Good afternoon! Perfect time to stay updated with the latest developments."
+        elif 17 <= now.hour < 21:
+            time_context = "Good evening! Let's review the day's top stories and breaking news."
+        else:
+            time_context = "Good night! Let's check the latest headlines before you rest."
+        
+        return f"""{time_context}
+
+📰 **News Categories Available:**
+• **Breaking News**: Latest developments and urgent updates
+• **World Events**: International politics, conflicts, and global developments
+• **Technology**: AI breakthroughs, tech innovations, and digital trends
+• **Business**: Market updates, economic news, and corporate developments
+• **Sports**: Game results, player news, and championship updates
+• **Entertainment**: Celebrity news, movie releases, and cultural events
+• **Science**: Research discoveries, medical breakthroughs, and space exploration
+• **Health**: Medical news, wellness trends, and public health updates
+
+⏰ **Current Time**: {current_time} on {current_date}
+
+🎯 **Ready to Explore**: What type of news interests you most today?"""
+    
+    def _get_enhanced_calculation_response(self, entities: Dict = None) -> str:
+        """Generate enhanced calculation response with helpful information"""
+        return """🧮 **Mathematical Operations Available:**
+
+**Basic Operations:**
+• **Addition (+)**: Adding numbers together
+• **Subtraction (-)**: Finding the difference between numbers
+• **Multiplication (×)**: Repeated addition or scaling
+• **Division (÷)**: Sharing or grouping numbers
+
+**Advanced Operations:**
+• **Percentages**: Calculate discounts, tips, and growth rates
+• **Fractions**: Work with ratios and proportions
+• **Decimals**: Handle precise calculations
+• **Exponents**: Calculate powers and roots
+
+**Real-world Examples:**
+• **Shopping**: Calculate discounts and sales tax
+• **Finance**: Interest rates, loan payments, and investments
+• **Cooking**: Recipe scaling and ingredient conversions
+• **Travel**: Currency conversion and distance calculations
+
+💡 **Just tell me**: "What is 25% of 80?" or "Calculate 15 × 7 + 23" and I'll solve it for you!"""
 
     def _get_conversation_response(self, text: str) -> str:
         """Generate conversational responses"""
@@ -467,8 +692,18 @@ Just ask me anything! I'm here to help make your day better and more productive.
         
         # Handle weather with location
         if intent == 'weather' and entities.get('location'):
+            # Check if the location is actually meaningful (not just "what is the")
             location = entities['location'][0]
-            return self._get_weather_info(location)
+            if len(location.split()) > 1 and not location.lower().startswith(('what', 'how', 'when', 'where')):
+                return self._get_weather_info(location)
+        
+        # Use enhanced responses for weather, news, and calculations
+        if intent == 'weather':
+            return self._get_enhanced_weather_response(entities)
+        elif intent == 'news':
+            return self._get_enhanced_news_response(entities)
+        elif intent == 'calculation':
+            return self._get_enhanced_calculation_response(entities)
         
         # Handle news with category
         if intent == 'news' and entities.get('topic'):
@@ -496,7 +731,7 @@ Just ask me anything! I'm here to help make your day better and more productive.
                 "Bye! I enjoyed our time together. Remember, I'm always here when you need me!"
             ],
             'weather': [
-                "I'd be happy to help with weather information! I can provide current conditions, forecasts, and detailed weather metrics for any city. Which location would you like to know about?",
+                self._get_enhanced_weather_response,
                 "Weather updates are my specialty! I can tell you about current conditions, upcoming forecasts, and detailed weather metrics. What city are you interested in?",
                 "I can provide comprehensive weather information including temperature, conditions, humidity, and wind speed. Just tell me which city you'd like to check!"
             ],
@@ -514,7 +749,7 @@ Just ask me anything! I'm here to help make your day better and more productive.
                 "I'd love to help with music! I can play rock, pop, jazz, classical, hip hop, country, or electronic. What genre interests you?"
             ],
             'news': [
-                "I can provide you with the latest news! I cover general news, technology, sports, business, entertainment, and science. What topics interest you?",
+                self._get_enhanced_news_response,
                 "News updates are available! I can share breaking news, top headlines, and category-specific updates. What would you like to know about?",
                 "I can share current headlines and breaking news! I cover everything from world events to technology and sports. What news category interests you?"
             ],
@@ -532,7 +767,7 @@ Just ask me anything! I'm here to help make your day better and more productive.
                 "I can look up information for you! I can search for facts, definitions, explanations, and detailed answers. What topic interests you?"
             ],
             'advanced_question': [
-                "I'd be happy to explain that in detail! This is a complex topic that I can break down for you in simple terms. Let me provide you with a comprehensive explanation.",
+                self._get_advanced_question_response,
                 "That's an excellent question! I can give you a thorough explanation of this topic, including key concepts and practical applications.",
                 "I love explaining complex topics! I can provide you with a detailed, easy-to-understand explanation of this subject."
             ],
@@ -542,7 +777,7 @@ Just ask me anything! I'm here to help make your day better and more productive.
                 "I can set reminders for you! I can schedule anything from simple tasks to important appointments. What's the task and when should I remind you?"
             ],
             'calculation': [
-                "I can help with calculations! I can perform addition, subtraction, multiplication, division, and more complex math operations. What would you like me to compute?",
+                self._get_enhanced_calculation_response,
                 "Math assistance is my specialty! I can solve equations, calculate percentages, and perform various mathematical operations. What calculation do you need?",
                 "I can perform calculations for you! I can handle basic math, percentages, and more complex equations. What's the math problem?"
             ],
@@ -570,7 +805,16 @@ Just ask me anything! I'm here to help make your day better and more productive.
             ]
         }
         
-        return random.choice(responses.get(intent, responses['general']))
+        # Get response list for the intent
+        response_list = responses.get(intent, responses['general'])
+        
+        # Prioritize method references over string responses
+        for response in response_list:
+            if callable(response):
+                return response(entities)
+        
+        # If no method references, return a random string response
+        return random.choice([r for r in response_list if not callable(r)])
 
     def _recognize_intent(self, text: str) -> str:
         """Recognize user intent from text"""
@@ -605,6 +849,10 @@ Just ask me anything! I'm here to help make your day better and more productive.
                     # Boost score for advanced questions (highest priority)
                     if intent == 'advanced_question':
                         score += 25  # Highest priority for advanced questions
+                    
+                    # Boost score for specific intents over general ones
+                    if intent in ['calculation', 'weather', 'news', 'time', 'joke']:
+                        score += 20  # High priority for specific functional intents
                     
                     if score > highest_score:
                         highest_score = score
@@ -718,6 +966,10 @@ Just ask me anything! I'm here to help make your day better and more productive.
         
         # Fallback to built-in response generation
         response = self._get_base_response(intent, entities)
+        
+        # Handle method references in responses
+        if callable(response):
+            response = response(entities)
         
         # Enhance response based on sentiment
         response = self._enhance_with_sentiment(response, sentiment)
