@@ -266,6 +266,16 @@ class NLPEngine:
                 r'\b(what is|who is|where is|when is|how to|define)\b',
                 r'\b(explain|describe|tell me about|information on)\b'
             ],
+            'advanced_question': [
+                r'\b(explain|describe|tell me about|what is|how does|why does)\b.*\b(quantum|computing|physics|chemistry|biology|engineering|technology|science)\b',
+                r'\b(explain|describe|tell me about|what is|how does|why does)\b.*\b(artificial intelligence|machine learning|deep learning|neural networks)\b',
+                r'\b(explain|describe|tell me about|what is|how does|why does)\b.*\b(blockchain|cryptocurrency|bitcoin|ethereum)\b',
+                r'\b(explain|describe|tell me about|what is|how does|why does)\b.*\b(philosophy|ethics|morality|existence|consciousness)\b',
+                r'\b(explain|describe|tell me about|what is|how does|why does)\b.*\b(economics|finance|markets|business|entrepreneurship)\b',
+                r'\b(explain|describe|tell me about|what is|how does|why does)\b.*\b(history|culture|art|literature|music theory)\b',
+                r'\b(explain|describe|tell me about|what is|how does|why does)\b.*\b(medicine|health|nutrition|wellness|fitness)\b',
+                r'\b(explain|describe|tell me about|what is|how does|why does)\b.*\b(psychology|sociology|anthropology|behavior)\b'
+            ],
             'reminder': [
                 r'\b(remind|reminder|remember|set alarm|schedule|appointment)\b',
                 r'\b(remind me to|set a reminder|don\'t forget|alert me)\b',
@@ -521,6 +531,11 @@ Just ask me anything! I'm here to help make your day better and more productive.
                 "Search functionality is one of my strengths! I can find information on any topic, explain complex subjects, and answer your questions. What are you looking for?",
                 "I can look up information for you! I can search for facts, definitions, explanations, and detailed answers. What topic interests you?"
             ],
+            'advanced_question': [
+                "I'd be happy to explain that in detail! This is a complex topic that I can break down for you in simple terms. Let me provide you with a comprehensive explanation.",
+                "That's an excellent question! I can give you a thorough explanation of this topic, including key concepts and practical applications.",
+                "I love explaining complex topics! I can provide you with a detailed, easy-to-understand explanation of this subject."
+            ],
             'reminder': [
                 "I can help you set reminders! I can schedule tasks, appointments, calls, and important events. What would you like me to remind you about?",
                 "Reminder functionality is available! I can set alerts for meetings, tasks, calls, and any important events. What should I remind you of?",
@@ -586,6 +601,10 @@ Just ask me anything! I'm here to help make your day better and more productive.
                     # Boost score for unclear patterns (numbers, etc.)
                     if intent == 'unclear':
                         score += 15  # Higher priority for unclear speech
+                    
+                    # Boost score for advanced questions (highest priority)
+                    if intent == 'advanced_question':
+                        score += 25  # Highest priority for advanced questions
                     
                     if score > highest_score:
                         highest_score = score
