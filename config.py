@@ -27,10 +27,19 @@ class Config:
     NLP_CONFIDENCE_THRESHOLD = float(os.getenv('NLP_CONFIDENCE_THRESHOLD', 0.7))
     NLP_MAX_CONVERSATION_HISTORY = int(os.getenv('NLP_MAX_CONVERSATION_HISTORY', 50))
     
+    # LLM Integration Settings
+    USE_LLM = os.getenv('USE_LLM', 'false').lower() == 'true'
+    ACTIVE_LLM = os.getenv('ACTIVE_LLM', 'openai')
+    
     # API Keys (optional - for enhanced features)
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', None)
+    ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', None)
     WEATHER_API_KEY = os.getenv('WEATHER_API_KEY', None)
     NEWS_API_KEY = os.getenv('NEWS_API_KEY', None)
+    
+    # Ollama Configuration (Local LLM)
+    OLLAMA_BASE_URL = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
+    OLLAMA_MODEL = os.getenv('OLLAMA_MODEL', 'llama2')
     
     # Logging settings
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO')
@@ -44,6 +53,7 @@ class Config:
     ENABLE_VOICE_RECOGNITION = os.getenv('ENABLE_VOICE_RECOGNITION', 'True').lower() == 'true'
     ENABLE_TEXT_TO_SPEECH = os.getenv('ENABLE_TEXT_TO_SPEECH', 'True').lower() == 'true'
     ENABLE_ADVANCED_NLP = os.getenv('ENABLE_ADVANCED_NLP', 'True').lower() == 'true'
+    ENABLE_LLM_INTEGRATION = os.getenv('ENABLE_LLM_INTEGRATION', 'True').lower() == 'true'
     ENABLE_WEATHER_API = os.getenv('ENABLE_WEATHER_API', 'False').lower() == 'true'
     ENABLE_NEWS_API = os.getenv('ENABLE_NEWS_API', 'False').lower() == 'true'
     
@@ -81,6 +91,18 @@ class Config:
         }
     
     @classmethod
+    def get_llm_config(cls):
+        """Get LLM configuration"""
+        return {
+            'use_llm': cls.USE_LLM,
+            'active_llm': cls.ACTIVE_LLM,
+            'openai_api_key': cls.OPENAI_API_KEY,
+            'anthropic_api_key': cls.ANTHROPIC_API_KEY,
+            'ollama_base_url': cls.OLLAMA_BASE_URL,
+            'ollama_model': cls.OLLAMA_MODEL
+        }
+    
+    @classmethod
     def validate_config(cls):
         """Validate configuration and return any issues"""
         issues = []
@@ -88,6 +110,15 @@ class Config:
         # Check required settings
         if not cls.SECRET_KEY or cls.SECRET_KEY == 'your-secret-key-here':
             issues.append("Warning: SECRET_KEY should be set for production")
+        
+        # Check LLM configuration
+        if cls.USE_LLM:
+            if cls.ACTIVE_LLM == 'openai' and not cls.OPENAI_API_KEY:
+                issues.append("Warning: OPENAI_API_KEY required for OpenAI LLM integration")
+            elif cls.ACTIVE_LLM == 'anthropic' and not cls.ANTHROPIC_API_KEY:
+                issues.append("Warning: ANTHROPIC_API_KEY required for Anthropic LLM integration")
+            elif cls.ACTIVE_LLM == 'ollama':
+                issues.append("Info: Using local Ollama LLM - ensure Ollama is running")
         
         # Check API keys if features are enabled
         if cls.ENABLE_WEATHER_API and not cls.WEATHER_API_KEY:
