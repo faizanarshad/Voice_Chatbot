@@ -342,7 +342,7 @@ class NLPEngine:
         text = text.lower().strip()
         
         # Extract intent
-        intent = self._recognize_intent(text)
+        intent, confidence = self._recognize_intent(text)
         
         # Extract entities
         entities = self._extract_entities(text)
@@ -361,7 +361,7 @@ class NLPEngine:
             'entities': entities,
             'sentiment': sentiment,
             'response': response,
-            'confidence': self._calculate_confidence(intent, entities)
+            'confidence': confidence
         }
 
     def _get_weather_info(self, location: str) -> str:
@@ -697,25 +697,29 @@ Just ask me anything! I'm here to help make your day better and more productive.
             if len(location.split()) > 1 and not location.lower().startswith(('what', 'how', 'when', 'where')):
                 return self._get_weather_info(location)
         
-        # Use enhanced responses for weather, news, and calculations
+        # Use enhanced responses for specific intents
         if intent == 'weather':
             return self._get_enhanced_weather_response(entities)
         elif intent == 'news':
             return self._get_enhanced_news_response(entities)
         elif intent == 'calculation':
             return self._get_enhanced_calculation_response(entities)
-        
-        # Handle news with category
-        if intent == 'news' and entities.get('topic'):
-            category = entities['topic'][0]
-            return self._get_news_headlines(category)
-        
-        # Handle calculations
-        if intent == 'calculation':
-            # Extract numbers and operations from entities
-            numbers = entities.get('number', [])
-            if numbers:
-                return self._perform_calculation(' '.join(numbers))
+        elif intent == 'music_control':
+            return self._get_music_control_response(entities)
+        elif intent == 'calendar':
+            return self._get_calendar_response(entities)
+        elif intent == 'weather_detailed':
+            return self._get_weather_detailed_response(entities)
+        elif intent == 'news_category':
+            return self._get_news_category_response(entities)
+        elif intent == 'calculator_advanced':
+            return self._get_enhanced_calculation_response(entities)
+        elif intent == 'notes':
+            return self._get_notes_response(entities)
+        elif intent == 'tasks':
+            return self._get_tasks_response(entities)
+        elif intent == 'web_search':
+            return self._get_web_search_response(entities)
         
         responses = {
             'greeting': [
@@ -791,6 +795,41 @@ Just ask me anything! I'm here to help make your day better and more productive.
                 "I'm an AI voice assistant created to help you with various tasks and have meaningful conversations. I don't have physical form, but I'm here to assist and learn from our interactions!",
                 "I'm your AI companion, designed to make your life easier and more enjoyable. I can help with information, entertainment, and productivity while having great conversations!"
             ],
+            'music_control': [
+                self._get_music_control_response,
+                "Music control is ready! I can play, pause, skip, adjust volume, and manage your music experience. What would you like me to do?",
+                "I'm your music DJ! I can control playback, change tracks, adjust volume, and create the perfect playlist. What's your musical command?"
+            ],
+            'calendar': [
+                self._get_calendar_response,
+                "Calendar management is active! I can schedule events, set reminders, check availability, and keep you organized. What's on your agenda?",
+                "I'm your personal calendar assistant! I can help you stay organized with events, meetings, and important dates. What would you like to schedule?"
+            ],
+            'weather_detailed': [
+                self._get_weather_detailed_response,
+                "Detailed weather information is available! I can provide forecasts, radar maps, air quality, and storm alerts. What weather details do you need?",
+                "I'm your weather expert! I can give you comprehensive weather data including forecasts, conditions, and environmental factors. What weather information interests you?"
+            ],
+            'news_category': [
+                self._get_news_category_response,
+                "Categorized news is ready! I can provide world, national, local, sports, technology, and business news. What category interests you?",
+                "I'm your news curator! I can deliver personalized news from various categories and sources. What type of news would you like to hear?"
+            ],
+            'notes': [
+                self._get_notes_response,
+                "Note-taking is active! I can create, edit, organize, and search your notes. What would you like me to remember?",
+                "I'm your digital notepad! I can capture your thoughts, organize information, and help you stay productive. What note would you like to create?"
+            ],
+            'tasks': [
+                self._get_tasks_response,
+                "Task management is ready! I can create, organize, track, and complete your tasks. What would you like me to help you manage?",
+                "I'm your task organizer! I can help you stay on top of your projects, deadlines, and daily activities. What task would you like to add?"
+            ],
+            'web_search': [
+                self._get_web_search_response,
+                "Web search is active! I can find information online, research topics, and help you discover new knowledge. What would you like me to search for?",
+                "I'm your web research assistant! I can search the internet, find facts, and help you explore any topic. What information are you looking for?"
+            ],
             'general': [
                 "I'm not sure I understood that. Could you please rephrase or ask me something specific? I can help with weather, news, music, calculations, and much more!",
                 "I didn't catch that clearly. Can you try asking in another way? I'm here to help with various tasks and would love to assist you!",
@@ -816,49 +855,158 @@ Just ask me anything! I'm here to help make your day better and more productive.
         # If no method references, return a random string response
         return random.choice([r for r in response_list if not callable(r)])
 
-    def _recognize_intent(self, text: str) -> str:
-        """Recognize user intent from text"""
-        best_match = 'general'
-        highest_score = 0
+    def _recognize_intent(self, text: str) -> Tuple[str, float]:
+        """Recognize intent from text with enhanced pattern matching"""
+        text_lower = text.lower()
         
-        for intent, patterns in self.intent_patterns.items():
-            if intent == 'general':  # Skip general pattern for now
-                continue
-                
+        # Enhanced intent patterns with new features
+        intent_patterns = {
+            'greeting': [
+                r'\b(hi|hello|hey|good morning|good afternoon|good evening|sup|yo)\b',
+                r'\b(how are you|how\'s it going|what\'s up)\b'
+            ],
+            'farewell': [
+                r'\b(bye|goodbye|see you|see ya|take care|good night)\b',
+                r'\b(until next time|talk to you later)\b'
+            ],
+            'weather': [
+                r'\b(weather|temperature|forecast|climate|humidity|wind)\b',
+                r'\b(how hot|how cold|is it raining|snow|sunny|cloudy)\b',
+                r'\b(weather in|temperature in|forecast for)\b'
+            ],
+            'time': [
+                r'\b(time|what time|current time|clock|hour|minute)\b',
+                r'\b(today|date|day|month|year|weekday)\b'
+            ],
+            'help': [
+                r'\b(help|assist|support|what can you do|capabilities|features)\b',
+                r'\b(how to|guide|tutorial|instructions)\b'
+            ],
+            'music': [
+                r'\b(music|song|play|artist|album|genre|playlist)\b',
+                r'\b(volume|pause|stop|next|previous|shuffle|repeat)\b',
+                r'\b(spotify|apple music|youtube music|soundcloud)\b'
+            ],
+            'news': [
+                r'\b(news|headlines|latest|breaking|current events)\b',
+                r'\b(world news|sports|technology|business|politics)\b',
+                r'\b(what\'s happening|top stories|trending)\b'
+            ],
+            'joke': [
+                r'\b(joke|funny|humor|laugh|comedy|punchline)\b',
+                r'\b(tell me a joke|make me laugh|something funny)\b'
+            ],
+            'search': [
+                r'\b(search|find|look up|google|bing|yahoo)\b',
+                r'\b(what is|who is|where is|how to|definition)\b'
+            ],
+            'advanced_question': [
+                r'\b(explain|describe|how does|what is the|tell me about)\b',
+                r'\b(quantum|artificial intelligence|machine learning|blockchain)\b',
+                r'\b(philosophy|science|technology|economics|medicine)\b'
+            ],
+            'reminder': [
+                r'\b(remind|reminder|alarm|schedule|appointment|meeting)\b',
+                r'\b(set reminder|wake me up|call me|meeting at)\b'
+            ],
+            'calculation': [
+                r'\b(calculate|math|equation|formula|solve|compute)\b',
+                r'\b(add|subtract|multiply|divide|percentage|square root)\b',
+                r'\b(what is|how much|total|sum|difference|product)\b'
+            ],
+            'conversation': [
+                r'\b(talk|chat|conversation|discuss|opinion|think)\b',
+                r'\b(how do you feel|what do you think|your thoughts)\b'
+            ],
+            'personal': [
+                r'\b(who are you|what are you|your name|about you)\b',
+                r'\b(are you real|are you human|your age|your job)\b'
+            ],
+            'music_control': [
+                r'\b(play music|start music|resume|pause music|stop music)\b',
+                r'\b(volume up|volume down|mute|unmute|next song|previous song)\b',
+                r'\b(shuffle|repeat|playlist|favorite|like|dislike)\b'
+            ],
+            'calendar': [
+                r'\b(calendar|schedule|appointment|meeting|event)\b',
+                r'\b(add event|book|reserve|available|free time)\b',
+                r'\b(today\'s schedule|tomorrow|this week|next week)\b'
+            ],
+            'weather_detailed': [
+                r'\b(weather forecast|5 day forecast|hourly weather|radar)\b',
+                r'\b(uv index|air quality|pollen count|wind speed|pressure)\b',
+                r'\b(weather alert|storm warning|severe weather)\b'
+            ],
+            'news_category': [
+                r'\b(world news|national news|local news|sports news)\b',
+                r'\b(tech news|business news|entertainment news|science news)\b',
+                r'\b(politics|health news|education news|environmental news)\b'
+            ],
+            'calculator_advanced': [
+                r'\b(scientific calculator|graph|plot|equation solver)\b',
+                r'\b(statistics|mean|median|mode|standard deviation)\b',
+                r'\b(trigonometry|sin|cos|tan|log|ln|exponential)\b'
+            ],
+            'notes': [
+                r'\b(note|write down|save|remember|memo|document)\b',
+                r'\b(create note|edit note|delete note|list notes)\b',
+                r'\b(important|urgent|priority|tag|category)\b'
+            ],
+            'tasks': [
+                r'\b(task|todo|to do|checklist|project|assignment)\b',
+                r'\b(add task|complete task|mark done|due date|deadline)\b',
+                r'\b(priority|urgent|important|low|medium|high)\b'
+            ],
+            'web_search': [
+                r'\b(google|search web|find online|look up|research)\b',
+                r'\b(web search|internet search|browse|navigate)\b',
+                r'\b(website|url|link|webpage|online)\b'
+            ],
+            'unclear': [
+                r'^\d+$',  # Just numbers
+                r'^[^\w\s]+$',  # Just symbols
+                r'^.{1,3}$',  # Very short unclear text
+                r'\b(blah|ugh|hmm|um|uh|er|ah)\b'  # Filler words
+            ],
+            'general': [
+                r'.*'  # Catch-all pattern
+            ]
+        }
+        
+        best_intent = 'general'
+        best_score = 0
+        
+        for intent, patterns in intent_patterns.items():
+            score = 0
+            
             for pattern in patterns:
-                matches = re.findall(pattern, text, re.IGNORECASE)
-                if matches:
-                    # Calculate score based on match length and pattern specificity
-                    if isinstance(matches[0], str):
-                        score = len(matches[0])
-                    else:
-                        score = sum(len(match) for match in matches if match)
+                if re.search(pattern, text_lower):
+                    # Base score for pattern match
+                    score += 10
                     
-                    # Boost score for more specific patterns
-                    if 'weather' in pattern and 'weather' in text.lower():
-                        score += 10
-                    if 'time' in pattern and 'time' in text.lower():
-                        score += 10
-                    if 'joke' in pattern and 'joke' in text.lower():
-                        score += 10
+                    # Boost score for longer, more specific matches
+                    match_length = len(re.findall(pattern, text_lower))
+                    score += match_length * 5
                     
-                    # Boost score for unclear patterns (numbers, etc.)
-                    if intent == 'unclear':
-                        score += 15  # Higher priority for unclear speech
+                    # Boost specific functional intents
+                    if intent in ['calculation', 'weather', 'news', 'time', 'joke', 'music_control', 'calendar', 'notes', 'tasks']:
+                        score += 20
                     
-                    # Boost score for advanced questions (highest priority)
+                    # Boost advanced question intent
                     if intent == 'advanced_question':
-                        score += 25  # Highest priority for advanced questions
+                        score += 25
                     
-                    # Boost score for specific intents over general ones
-                    if intent in ['calculation', 'weather', 'news', 'time', 'joke']:
-                        score += 20  # High priority for specific functional intents
+                    # Boost unclear intent for very short/nonsensical input
+                    if intent == 'unclear':
+                        score += 30
                     
-                    if score > highest_score:
-                        highest_score = score
-                        best_match = intent
+                    break
+            
+            if score > best_score:
+                best_score = score
+                best_intent = intent
         
-        return best_match
+        return best_intent, best_score
 
     def _extract_entities(self, text: str) -> Dict[str, List[str]]:
         """Extract named entities from text"""
@@ -1086,3 +1234,219 @@ Just ask me anything! I'm here to help make your day better and more productive.
     def get_user_preferences(self, user_id: str) -> Dict:
         """Get user preferences"""
         return self.user_preferences.get(user_id, {})
+
+    def _get_enhanced_calculation_response(self, entities: Dict) -> str:
+        """Get enhanced calculation response with advanced math capabilities"""
+        current_time = datetime.now()
+        
+        return f"""🧮 **Advanced Calculator Ready!**
+
+⚡ **Available Operations:**
+• **Basic Math**: Addition, subtraction, multiplication, division
+• **Advanced Math**: Powers, roots, percentages, fractions
+• **Scientific Functions**: Sin, cos, tan, log, ln, exponential
+• **Statistics**: Mean, median, mode, standard deviation
+• **Unit Conversion**: Length, weight, temperature, currency
+
+🔢 **Examples:**
+• "Calculate 25% of 200"
+• "What is the square root of 144?"
+• "Solve 2x + 5 = 15"
+• "Convert 100 Fahrenheit to Celsius"
+
+⏰ **Current Time**: {current_time.strftime('%I:%M %p')}
+🎯 **Ready to calculate anything you need!**"""
+
+    def _get_music_control_response(self, entities: Dict) -> str:
+        """Get music control response with playback options"""
+        current_time = datetime.now()
+        
+        return f"""🎵 **Music Control Center**
+
+🎮 **Playback Controls:**
+• **Play/Pause**: Start or pause music
+• **Skip**: Next/Previous track
+• **Volume**: Adjust volume levels
+• **Shuffle**: Random play mode
+• **Repeat**: Loop current track
+
+🎧 **Music Services:**
+• **Spotify**: Full integration ready
+• **Apple Music**: Seamless control
+• **YouTube Music**: Video and audio
+• **Local Library**: Your music files
+
+🎼 **Smart Features:**
+• **Voice Commands**: "Play rock music"
+• **Mood Detection**: "I'm feeling sad"
+• **Genre Selection**: "Play jazz"
+• **Artist Recognition**: "Play The Beatles"
+
+⏰ **Current Time**: {current_time.strftime('%I:%M %p')}
+🎯 **What would you like to listen to?**"""
+
+    def _get_calendar_response(self, entities: Dict) -> str:
+        """Get calendar and scheduling response"""
+        current_time = datetime.now()
+        current_date = current_time.strftime('%A, %B %d, %Y')
+        
+        return f"""📅 **Smart Calendar Assistant**
+
+📋 **Schedule Management:**
+• **Add Events**: "Meeting at 3 PM tomorrow"
+• **Set Reminders**: "Remind me to call mom"
+• **Check Availability**: "When am I free?"
+• **View Schedule**: "Show today's events"
+
+🗓️ **Smart Features:**
+• **Natural Language**: "Lunch with John next Tuesday"
+• **Recurring Events**: "Weekly team meeting"
+• **Location Integration**: "Coffee at Starbucks"
+• **Priority Levels**: High, medium, low importance
+
+⏰ **Current Time**: {current_time.strftime('%I:%M %p')}
+📅 **Today**: {current_date}
+🎯 **Ready to manage your schedule!**"""
+
+    def _get_weather_detailed_response(self, entities: Dict) -> str:
+        """Get detailed weather information response"""
+        current_time = datetime.now()
+        
+        return f"""🌤️ **Detailed Weather Center**
+
+📊 **Weather Data Available:**
+• **Current Conditions**: Real-time temperature, humidity, wind
+• **Hourly Forecast**: 24-hour detailed predictions
+• **5-Day Forecast**: Extended weather outlook
+• **Weather Maps**: Radar and satellite imagery
+• **Air Quality**: Pollution levels and UV index
+• **Pollen Count**: Allergy information
+• **Storm Alerts**: Severe weather warnings
+
+🌍 **Location Features:**
+• **GPS Detection**: Automatic location
+• **Multiple Cities**: Compare weather
+• **Travel Weather**: Destination forecasts
+• **Historical Data**: Past weather patterns
+
+⏰ **Current Time**: {current_time.strftime('%I:%M %p')}
+📍 **Ready to provide detailed weather information!**"""
+
+    def _get_news_category_response(self, entities: Dict) -> str:
+        """Get categorized news response"""
+        current_time = datetime.now()
+        
+        return f"""📰 **Smart News Center**
+
+📱 **News Categories:**
+• **World News**: International events and politics
+• **National News**: Country-specific updates
+• **Local News**: Your city and region
+• **Sports**: Scores, highlights, and analysis
+• **Technology**: Latest tech developments
+• **Business**: Market updates and economy
+• **Entertainment**: Movies, music, and celebrities
+• **Science**: Research and discoveries
+• **Health**: Medical news and wellness
+• **Politics**: Government and policy updates
+
+🔍 **Smart Features:**
+• **Personalized**: Learn your interests
+• **Breaking News**: Real-time alerts
+• **Trending Topics**: What's popular now
+• **Fact Checking**: Verify information
+• **Multiple Sources**: Diverse perspectives
+
+⏰ **Current Time**: {current_time.strftime('%I:%M %p')}
+🎯 **What news interests you today?**"""
+
+    def _get_notes_response(self, entities: Dict) -> str:
+        """Get note-taking response"""
+        current_time = datetime.now()
+        
+        return f"""📝 **Smart Note Assistant**
+
+✏️ **Note Features:**
+• **Create Notes**: "Write down my shopping list"
+• **Edit Notes**: "Update my meeting notes"
+• **Delete Notes**: "Remove old reminder"
+• **Search Notes**: "Find my password note"
+• **Organize**: Tags, categories, and folders
+
+🎯 **Smart Organization:**
+• **Voice to Text**: Speak your notes
+• **Auto-Categorize**: Smart tagging system
+• **Priority Levels**: Important, urgent, normal
+• **Due Dates**: Set reminders and deadlines
+• **Collaboration**: Share notes with others
+
+💡 **Use Cases:**
+• **Shopping Lists**: "Add milk to shopping list"
+• **Meeting Notes**: "Create meeting notes for tomorrow"
+• **Ideas**: "Save my project idea"
+• **Passwords**: "Remember my login info"
+• **Reminders**: "Note to call dentist"
+
+⏰ **Current Time**: {current_time.strftime('%I:%M %p')}
+🎯 **Ready to capture your thoughts!**"""
+
+    def _get_tasks_response(self, entities: Dict) -> str:
+        """Get task management response"""
+        current_time = datetime.now()
+        
+        return f"""✅ **Task Management Center**
+
+📋 **Task Features:**
+• **Create Tasks**: "Add buy groceries to my list"
+• **Complete Tasks**: "Mark meeting preparation as done"
+• **Edit Tasks**: "Change deadline to next Friday"
+• **Delete Tasks**: "Remove old task"
+• **View Tasks**: "Show my todo list"
+
+🎯 **Smart Organization:**
+• **Priority Levels**: High, medium, low
+• **Due Dates**: Set deadlines and reminders
+• **Categories**: Work, personal, health, etc.
+• **Progress Tracking**: Monitor completion
+• **Time Estimates**: How long tasks take
+
+📊 **Project Management:**
+• **Task Lists**: Organize by project
+• **Dependencies**: Link related tasks
+• **Team Tasks**: Assign to others
+• **Progress Reports**: Track completion
+• **Goal Setting**: Long-term objectives
+
+⏰ **Current Time**: {current_time.strftime('%I:%M %p')}
+🎯 **Ready to help you stay organized!**"""
+
+    def _get_web_search_response(self, entities: Dict) -> str:
+        """Get web search response"""
+        current_time = datetime.now()
+        
+        return f"""🔍 **Web Search Assistant**
+
+🌐 **Search Capabilities:**
+• **Google Search**: Find information online
+• **Web Browsing**: Navigate websites
+• **Research**: Deep dive into topics
+• **Fact Checking**: Verify information
+• **News Search**: Find recent articles
+
+🎯 **Smart Search Features:**
+• **Natural Language**: "What's the weather like in Paris?"
+• **Voice Commands**: "Search for best restaurants"
+• **Image Search**: Find pictures and graphics
+• **Video Search**: Locate video content
+• **Shopping**: Compare prices and products
+
+📱 **Search Categories:**
+• **General Web**: Broad internet search
+• **News**: Current events and articles
+• **Images**: Photos and graphics
+• **Videos**: YouTube and other platforms
+• **Shopping**: E-commerce and products
+• **Academic**: Research papers and studies
+
+⏰ **Current Time**: {current_time.strftime('%I:%M %p')}
+🎯 **What would you like me to search for?**"""

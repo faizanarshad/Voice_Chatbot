@@ -348,6 +348,61 @@ def analyze_text():
         logger.error(f"Error analyzing text: {e}")
         return jsonify({'status': 'error', 'message': str(e)})
 
+@app.route('/api/features', methods=['GET'])
+def get_features():
+    """Get available chatbot features"""
+    features = {
+        'core_features': {
+            'voice_recognition': 'Speech-to-text conversion',
+            'text_to_speech': 'Text-to-speech with 150 WPM',
+            'intent_recognition': 'Smart intent classification',
+            'llm_integration': 'OpenAI GPT-3.5-turbo support'
+        },
+        'new_features': {
+            'music_control': 'Play, pause, skip, volume control',
+            'calendar': 'Schedule management and reminders',
+            'weather_detailed': 'Comprehensive weather information',
+            'news_category': 'Categorized news delivery',
+            'calculator_advanced': 'Scientific and statistical calculations',
+            'notes': 'Voice note-taking and organization',
+            'tasks': 'Task management and project tracking',
+            'web_search': 'Internet search and research'
+        },
+        'productivity': {
+            'reminders': 'Smart reminder system',
+            'search': 'Information lookup and search',
+            'conversation': 'Natural language processing',
+            'context_memory': 'Conversation history tracking'
+        }
+    }
+    return jsonify(features)
+
+@app.route('/api/test-feature/<feature>', methods=['POST'])
+def test_feature(feature):
+    """Test specific chatbot features"""
+    try:
+        data = request.get_json()
+        text = data.get('text', '')
+        
+        if not text:
+            return jsonify({'error': 'Text is required'}), 400
+        
+        # Process the text through NLP engine
+        result = app.nlp_engine.process_input(text, 'test_user')
+        
+        return jsonify({
+            'feature': feature,
+            'input': text,
+            'intent': result.get('intent'),
+            'confidence': result.get('confidence'),
+            'response': result.get('response'),
+            'entities': result.get('entities')
+        })
+        
+    except Exception as e:
+        logger.error(f"Error testing feature {feature}: {e}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(
         debug=Config.DEBUG, 
