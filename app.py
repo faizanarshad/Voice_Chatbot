@@ -388,7 +388,7 @@ def test_feature(feature):
             return jsonify({'error': 'Text is required'}), 400
         
         # Process the text through NLP engine
-        result = app.nlp_engine.process_input(text, 'test_user')
+        result = chatbot.nlp_engine.process_input(text, 'test_user')
         
         return jsonify({
             'feature': feature,

@@ -3,126 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Voice Chatbot</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>AI Voice Assistant Pro</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
+        <!-- Header Section -->
         <header class="header">
             <div class="logo">
                 <i class="fas fa-robot"></i>
-                <h1>AI Voice Assistant</h1>
+                <h1>AI Voice Assistant Pro</h1>
             </div>
             <div class="status-indicator">
                 <span id="status-text">Ready</span>
-                <div id="status-dot" class="status-dot"></div>
+                <div id="status-dot" class="status-dot ready"></div>
             </div>
         </header>
 
+        <!-- Main Content -->
         <main class="main-content">
-            <div class="chat-container">
-                <div class="chat-messages" id="chat-messages">
-                    <div class="message bot-message">
-                        <div class="message-avatar">
+            <!-- Voice Control Section -->
+            <section class="voice-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-microphone"></i> Voice Control</h2>
+                    <p>Speak naturally to interact with your AI assistant</p>
+                </div>
+                
+                <div class="voice-controls">
+                    <button id="startBtn" class="btn btn-primary">
+                        <i class="fas fa-microphone"></i>
+                        Start Listening
+                    </button>
+                    <button id="stopBtn" class="btn btn-danger" style="display: none;">
+                        <i class="fas fa-stop"></i>
+                        Stop Listening
+                    </button>
+                </div>
+
+                <!-- Recording Timer -->
+                <div id="recordingTimer" class="recording-timer" style="display: none;">
+                    <i class="fas fa-clock"></i>
+                    <span id="timerDisplay">00:00</span>
+                </div>
+
+                <div class="voice-status">
+                    <div id="voiceStatus" class="status-message">Click Start to begin voice interaction</div>
+                </div>
+            </section>
+
+            <!-- Text Input Section -->
+            <section class="text-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-keyboard"></i> Text Input</h2>
+                    <p>Type your questions or commands directly</p>
+                </div>
+                
+                <div class="text-input-container">
+                    <input type="text" id="textInput" placeholder="Type your message here..." class="text-input">
+                    <button id="sendBtn" class="btn btn-secondary">
+                        <i class="fas fa-paper-plane"></i>
+                        Send
+                    </button>
+                </div>
+            </section>
+
+            <!-- Features Showcase -->
+            <section class="features-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-star"></i> Available Features</h2>
+                    <p>Explore what your AI assistant can do</p>
+                </div>
+                
+                <div class="features-grid">
+                    <div class="feature-card" data-feature="music_control">
+                        <i class="fas fa-music"></i>
+                        <h3>Music Control</h3>
+                        <p>Play, pause, skip, volume control</p>
+                    </div>
+                    <div class="feature-card" data-feature="calendar">
+                        <i class="fas fa-calendar-alt"></i>
+                        <h3>Calendar</h3>
+                        <p>Schedule management & reminders</p>
+                    </div>
+                    <div class="feature-card" data-feature="weather_detailed">
+                        <i class="fas fa-cloud-sun"></i>
+                        <h3>Weather</h3>
+                        <p>Detailed forecasts & alerts</p>
+                    </div>
+                    <div class="feature-card" data-feature="news_category">
+                        <i class="fas fa-newspaper"></i>
+                        <h3>News</h3>
+                        <p>Categorized news updates</p>
+                    </div>
+                    <div class="feature-card" data-feature="calculator_advanced">
+                        <i class="fas fa-calculator"></i>
+                        <h3>Calculator</h3>
+                        <p>Scientific & statistical calculations</p>
+                    </div>
+                    <div class="feature-card" data-feature="notes">
+                        <i class="fas fa-sticky-note"></i>
+                        <h3>Notes</h3>
+                        <p>Voice note-taking & organization</p>
+                    </div>
+                    <div class="feature-card" data-feature="tasks">
+                        <i class="fas fa-tasks"></i>
+                        <h3>Tasks</h3>
+                        <p>Task management & tracking</p>
+                    </div>
+                    <div class="feature-card" data-feature="web_search">
+                        <i class="fas fa-search"></i>
+                        <h3>Web Search</h3>
+                        <p>Internet research & information</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Conversation Section -->
+            <section class="conversation-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-comments"></i> Conversation</h2>
+                    <p>Your interaction history with the AI</p>
+                </div>
+                
+                <div class="conversation-container">
+                    <div id="conversation" class="conversation">
+                        <div class="welcome-message">
                             <i class="fas fa-robot"></i>
-                        </div>
-                        <div class="message-content">
-                            <p>Hello! I'm your AI voice assistant. I can help you with various tasks like checking the weather, telling time, playing music, getting news, and telling jokes. How can I assist you today?</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="input-section">
-                    <div class="text-input-container">
-                        <input type="text" id="text-input" placeholder="Type your message here..." class="text-input">
-                        <button id="send-btn" class="send-btn">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="voice-controls">
-                        <div class="recording-timer" id="recording-timer" style="display: none;">
-                            <i class="fas fa-clock"></i>
-                            <span id="timer-display">00:00</span>
-                        </div>
-                        <button id="voice-btn" class="voice-btn">
-                            <i class="fas fa-microphone"></i>
-                            <span>Start Voice</span>
-                        </button>
-                        <button id="stop-voice-btn" class="stop-voice-btn" style="display: none;">
-                            <i class="fas fa-stop"></i>
-                            <span>Stop Voice</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="sidebar">
-                <div class="sidebar-section">
-                    <h3>Quick Actions</h3>
-                    <div class="quick-actions">
-                        <button class="quick-action-btn" data-action="time">
-                            <i class="fas fa-clock"></i>
-                            <span>What time is it?</span>
-                        </button>
-                        <button class="quick-action-btn" data-action="weather">
-                            <i class="fas fa-cloud-sun"></i>
-                            <span>Weather info</span>
-                        </button>
-                        <button class="quick-action-btn" data-action="joke">
-                            <i class="fas fa-laugh"></i>
-                            <span>Tell me a joke</span>
-                        </button>
-                        <button class="quick-action-btn" data-action="help">
-                            <i class="fas fa-question-circle"></i>
-                            <span>What can you do?</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="sidebar-section">
-                    <h3>Conversation Stats</h3>
-                    <div class="stats">
-                        <div class="stat-item">
-                            <span class="stat-label">Messages:</span>
-                            <span id="message-count" class="stat-value">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Status:</span>
-                            <span id="listening-status" class="stat-value">Idle</span>
+                            <h3>Welcome to AI Voice Assistant Pro!</h3>
+                            <p>I'm your intelligent voice companion. I can help you with:</p>
+                            <ul>
+                                <li>🎵 Music control and playback</li>
+                                <li>📅 Calendar management and reminders</li>
+                                <li>🌤️ Weather information and forecasts</li>
+                                <li>📰 News updates and research</li>
+                                <li>🧮 Advanced calculations</li>
+                                <li>📝 Note-taking and organization</li>
+                                <li>✅ Task management</li>
+                                <li>🔍 Web search and information</li>
+                            </ul>
+                            <p>Just speak naturally or type your requests!</p>
                         </div>
                     </div>
                 </div>
-
-                <div class="sidebar-section">
-                    <h3>Voice Settings</h3>
-                    <div class="settings">
-                        <div class="setting-item">
-                            <label for="voice-speed">Speed:</label>
-                            <input type="range" id="voice-speed" min="0.5" max="2" step="0.1" value="1">
-                            <span id="speed-value">1x</span>
-                        </div>
-                        <div class="setting-item">
-                            <label for="voice-volume">Volume:</label>
-                            <input type="range" id="voice-volume" min="0" max="1" step="0.1" value="0.9">
-                            <span id="volume-value">90%</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            </section>
         </main>
-    </div>
 
-    <div class="voice-visualizer" id="voice-visualizer">
-        <div class="visualizer-bars">
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-            <div class="bar"></div>
-        </div>
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2025 AI Voice Assistant Pro. Powered by advanced NLP and AI technologies.</p>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">Privacy</a>
+                    <a href="#" class="footer-link">Terms</a>
+                    <a href="#" class="footer-link">Support</a>
+                </div>
+            </div>
+        </footer>
     </div>
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
