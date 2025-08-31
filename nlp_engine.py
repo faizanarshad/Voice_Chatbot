@@ -10,55 +10,77 @@ import logging
 logger = logging.getLogger(__name__)
 
 class LLMIntegration:
-    """Integration with various Large Language Models"""
+    """Advanced integration with various Large Language Models"""
     
     def __init__(self):
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
         self.anthropic_api_key = os.getenv('ANTHROPIC_API_KEY')
         self.ollama_base_url = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
         self.active_llm = os.getenv('ACTIVE_LLM', 'openai')  # openai, anthropic, ollama
+        self.conversation_history = []
+        self.max_history = 10  # Keep last 10 exchanges for context
         
-    def generate_response(self, user_input: str, context: str = "", system_prompt: str = "") -> str:
-        """Generate response using the active LLM"""
+    def generate_response(self, user_input: str, context: str = "", system_prompt: str = "", conversation_context: List = None) -> str:
+        """Generate advanced response using the active LLM with enhanced context"""
         try:
+            # Update conversation history
+            self._update_conversation_history(user_input)
+            
             if self.active_llm == 'openai' and self.openai_api_key:
-                return self._openai_generate(user_input, context, system_prompt)
+                return self._openai_generate(user_input, context, system_prompt, conversation_context)
             elif self.active_llm == 'anthropic' and self.anthropic_api_key:
-                return self._anthropic_generate(user_input, context, system_prompt)
+                return self._anthropic_generate(user_input, context, system_prompt, conversation_context)
             elif self.active_llm == 'ollama':
-                return self._ollama_generate(user_input, context, system_prompt)
+                return self._ollama_generate(user_input, context, system_prompt, conversation_context)
             else:
                 return self._fallback_response(user_input)
         except Exception as e:
             logger.error(f"Error generating LLM response: {e}")
             return self._fallback_response(user_input)
     
-    def _openai_generate(self, user_input: str, context: str = "", system_prompt: str = "") -> str:
-        """Generate response using OpenAI GPT"""
+    def _update_conversation_history(self, user_input: str):
+        """Update conversation history for context"""
+        self.conversation_history.append({"role": "user", "content": user_input})
+        if len(self.conversation_history) > self.max_history * 2:  # Keep user + assistant pairs
+            self.conversation_history = self.conversation_history[-self.max_history * 2:]
+    
+    def _openai_generate(self, user_input: str, context: str = "", system_prompt: str = "", conversation_context: List = None) -> str:
+        """Generate advanced response using OpenAI GPT with enhanced capabilities"""
         if not system_prompt:
-            system_prompt = """You are an advanced AI voice assistant with deep knowledge across multiple domains. You can help with:
+            system_prompt = """You are an advanced AI voice assistant with exceptional capabilities across all domains. You excel at:
 
-KNOWLEDGE AREAS:
-- Science & Technology: Physics, chemistry, biology, computer science, engineering
-- Business & Economics: Markets, finance, entrepreneurship, management
-- History & Culture: World history, art, literature, philosophy
-- Health & Medicine: Medical information, wellness, nutrition
-- Current Events: Politics, global affairs, technology trends
-- Education: Learning strategies, academic subjects, career guidance
-- Problem Solving: Analytical thinking, troubleshooting, decision making
+CORE CAPABILITIES:
+🧠 **Advanced Intelligence**: Deep understanding of complex topics, analytical thinking, and creative problem-solving
+🎯 **Context Awareness**: Remember conversation history and build meaningful, coherent discussions
+💡 **Creative Solutions**: Generate innovative ideas, suggestions, and approaches
+📚 **Comprehensive Knowledge**: Expertise in science, technology, business, arts, philosophy, and current events
+🎨 **Engaging Communication**: Natural, conversational responses that are both informative and entertaining
+🔍 **Critical Analysis**: Evaluate information, provide balanced perspectives, and identify key insights
 
 RESPONSE STYLE:
-- Keep responses conversational and clear for voice interaction
-- Provide concise but comprehensive answers (2-3 sentences for simple questions, 4-6 for complex ones)
-- Use examples when helpful
-- Be accurate and informative
-- Maintain a helpful and engaging tone
+- Be conversational, warm, and engaging while maintaining professionalism
+- Provide detailed, well-structured responses (3-8 sentences for complex topics)
+- Use examples, analogies, and real-world applications when helpful
+- Show enthusiasm and genuine interest in the user's questions
+- Ask follow-up questions to deepen the conversation when appropriate
+- Use emojis sparingly but effectively to enhance communication
 
-CONTEXT AWARENESS:
-- Consider conversation history and context
-- Build on previous interactions
-- Provide relevant follow-up information when appropriate"""
-        
+SPECIAL FEATURES:
+- **Problem Solving**: Break down complex problems into manageable steps
+- **Learning Support**: Explain concepts clearly with progressive complexity
+- **Creative Writing**: Help with stories, poems, scripts, and creative content
+- **Technical Support**: Provide detailed technical explanations and troubleshooting
+- **Life Advice**: Offer thoughtful perspectives on personal and professional matters
+- **Entertainment**: Share jokes, interesting facts, and engaging stories
+
+CONTEXT HANDLING:
+- Reference previous parts of the conversation naturally
+- Build on earlier topics and insights
+- Maintain consistency in personality and knowledge
+- Adapt response length and complexity based on user engagement
+
+Remember: You're not just answering questions - you're having a meaningful conversation with a curious, intelligent person who values your insights and expertise."""
+
         headers = {
             'Authorization': f'Bearer {self.openai_api_key}',
             'Content-Type': 'application/json'
@@ -68,137 +90,219 @@ CONTEXT AWARENESS:
             {'role': 'system', 'content': system_prompt}
         ]
         
+        # Add conversation context
+        if conversation_context:
+            messages.extend(conversation_context[-6:])  # Last 6 exchanges for context
+        
+        # Add current context if provided
         if context:
-            messages.append({'role': 'assistant', 'content': context})
+            messages.append({'role': 'assistant', 'content': f"Context: {context}"})
         
         messages.append({'role': 'user', 'content': user_input})
         
         data = {
             'model': 'gpt-3.5-turbo',
             'messages': messages,
-            'max_tokens': 150,
-            'temperature': 0.7
+            'max_tokens': 500,  # Increased for more detailed responses
+            'temperature': 0.8,  # Slightly higher for more creative responses
+            'top_p': 0.9,
+            'frequency_penalty': 0.1,
+            'presence_penalty': 0.1
         }
         
         response = requests.post(
             'https://api.openai.com/v1/chat/completions',
             headers=headers,
             json=data,
-            timeout=10
+            timeout=15
         )
         
         if response.status_code == 200:
             result = response.json()
-            return result['choices'][0]['message']['content'].strip()
+            response_text = result['choices'][0]['message']['content'].strip()
+            
+            # Update conversation history with assistant response
+            self.conversation_history.append({"role": "assistant", "content": response_text})
+            
+            return response_text
         else:
             logger.error(f"OpenAI API error: {response.status_code} - {response.text}")
             return self._fallback_response(user_input)
     
-    def _anthropic_generate(self, user_input: str, context: str = "", system_prompt: str = "") -> str:
-        """Generate response using Anthropic Claude"""
+    def _anthropic_generate(self, user_input: str, context: str = "", system_prompt: str = "", conversation_context: List = None) -> str:
+        """Generate advanced response using Anthropic Claude"""
         if not system_prompt:
-            system_prompt = """You are an advanced AI voice assistant with deep knowledge across multiple domains. You can help with:
+            system_prompt = """You are an advanced AI voice assistant with exceptional capabilities across all domains. You excel at:
 
-KNOWLEDGE AREAS:
-- Science & Technology: Physics, chemistry, biology, computer science, engineering
-- Business & Economics: Markets, finance, entrepreneurship, management
-- History & Culture: World history, art, literature, philosophy
-- Health & Medicine: Medical information, wellness, nutrition
-- Current Events: Politics, global affairs, technology trends
-- Education: Learning strategies, academic subjects, career guidance
-- Problem Solving: Analytical thinking, troubleshooting, decision making
+CORE CAPABILITIES:
+🧠 **Advanced Intelligence**: Deep understanding of complex topics, analytical thinking, and creative problem-solving
+🎯 **Context Awareness**: Remember conversation history and build meaningful, coherent discussions
+💡 **Creative Solutions**: Generate innovative ideas, suggestions, and approaches
+📚 **Comprehensive Knowledge**: Expertise in science, technology, business, arts, philosophy, and current events
+🎨 **Engaging Communication**: Natural, conversational responses that are both informative and entertaining
+🔍 **Critical Analysis**: Evaluate information, provide balanced perspectives, and identify key insights
 
 RESPONSE STYLE:
-- Keep responses conversational and clear for voice interaction
-- Provide concise but comprehensive answers (2-3 sentences for simple questions, 4-6 for complex ones)
-- Use examples when helpful
-- Be accurate and informative
-- Maintain a helpful and engaging tone
+- Be conversational, warm, and engaging while maintaining professionalism
+- Provide detailed, well-structured responses (3-8 sentences for complex topics)
+- Use examples, analogies, and real-world applications when helpful
+- Show enthusiasm and genuine interest in the user's questions
+- Ask follow-up questions to deepen the conversation when appropriate
+- Use emojis sparingly but effectively to enhance communication
 
-CONTEXT AWARENESS:
-- Consider conversation history and context
-- Build on previous interactions
-- Provide relevant follow-up information when appropriate"""
-        
+SPECIAL FEATURES:
+- **Problem Solving**: Break down complex problems into manageable steps
+- **Learning Support**: Explain concepts clearly with progressive complexity
+- **Creative Writing**: Help with stories, poems, scripts, and creative content
+- **Technical Support**: Provide detailed technical explanations and troubleshooting
+- **Life Advice**: Offer thoughtful perspectives on personal and professional matters
+- **Entertainment**: Share jokes, interesting facts, and engaging stories
+
+CONTEXT HANDLING:
+- Reference previous parts of the conversation naturally
+- Build on earlier topics and insights
+- Maintain consistency in personality and knowledge
+- Adapt response length and complexity based on user engagement
+
+Remember: You're not just answering questions - you're having a meaningful conversation with a curious, intelligent person who values your insights and expertise."""
+
         headers = {
             'x-api-key': self.anthropic_api_key,
             'Content-Type': 'application/json',
             'anthropic-version': '2023-06-01'
         }
         
-        prompt = f"{system_prompt}\n\n"
+        # Build conversation context
+        conversation_text = ""
+        if conversation_context:
+            for msg in conversation_context[-6:]:  # Last 6 exchanges
+                conversation_text += f"{msg['role'].title()}: {msg['content']}\n"
+        
         if context:
-            prompt += f"Previous context: {context}\n\n"
-        prompt += f"User: {user_input}\n\nAssistant:"
+            conversation_text += f"Context: {context}\n"
+        
+        conversation_text += f"Human: {user_input}\n\nAssistant:"
         
         data = {
-            'model': 'claude-3-haiku-20240307',
-            'max_tokens': 150,
-            'temperature': 0.7,
-            'prompt': prompt
+            'model': 'claude-3-sonnet-20240229',
+            'max_tokens': 500,
+            'temperature': 0.8,
+            'system': system_prompt,
+            'messages': [
+                {
+                    'role': 'user',
+                    'content': conversation_text
+                }
+            ]
         }
         
         response = requests.post(
-            'https://api.anthropic.com/v1/complete',
+            'https://api.anthropic.com/v1/messages',
             headers=headers,
             json=data,
-            timeout=10
+            timeout=15
         )
         
         if response.status_code == 200:
             result = response.json()
-            return result['completion'].strip()
+            response_text = result['content'][0]['text'].strip()
+            
+            # Update conversation history
+            self.conversation_history.append({"role": "assistant", "content": response_text})
+            
+            return response_text
         else:
             logger.error(f"Anthropic API error: {response.status_code} - {response.text}")
             return self._fallback_response(user_input)
     
-    def _ollama_generate(self, user_input: str, context: str = "", system_prompt: str = "") -> str:
+    def _ollama_generate(self, user_input: str, context: str = "", system_prompt: str = "", conversation_context: List = None) -> str:
         """Generate response using local Ollama models"""
         if not system_prompt:
-            system_prompt = """You are a helpful AI voice assistant. You can help with:
-- Weather information and forecasts
-- News and current events
-- Time and date information
-- Mathematical calculations
-- General knowledge and explanations
-- Engaging conversations and jokes
-- Task assistance and reminders
+            system_prompt = """You are an advanced AI voice assistant with exceptional capabilities across all domains. You excel at:
 
-Keep responses conversational, clear, and concise for voice interaction. Use natural language and be helpful."""
-        
+CORE CAPABILITIES:
+🧠 **Advanced Intelligence**: Deep understanding of complex topics, analytical thinking, and creative problem-solving
+🎯 **Context Awareness**: Remember conversation history and build meaningful, coherent discussions
+💡 **Creative Solutions**: Generate innovative ideas, suggestions, and approaches
+📚 **Comprehensive Knowledge**: Expertise in science, technology, business, arts, philosophy, and current events
+🎨 **Engaging Communication**: Natural, conversational responses that are both informative and entertaining
+🔍 **Critical Analysis**: Evaluate information, provide balanced perspectives, and identify key insights
+
+RESPONSE STYLE:
+- Be conversational, warm, and engaging while maintaining professionalism
+- Provide detailed, well-structured responses (3-8 sentences for complex topics)
+- Use examples, analogies, and real-world applications when helpful
+- Show enthusiasm and genuine interest in the user's questions
+- Ask follow-up questions to deepen the conversation when appropriate
+- Use emojis sparingly but effectively to enhance communication
+
+SPECIAL FEATURES:
+- **Problem Solving**: Break down complex problems into manageable steps
+- **Learning Support**: Explain concepts clearly with progressive complexity
+- **Creative Writing**: Help with stories, poems, scripts, and creative content
+- **Technical Support**: Provide detailed technical explanations and troubleshooting
+- **Life Advice**: Offer thoughtful perspectives on personal and professional matters
+- **Entertainment**: Share jokes, interesting facts, and engaging stories
+
+CONTEXT HANDLING:
+- Reference previous parts of the conversation naturally
+- Build on earlier topics and insights
+- Maintain consistency in personality and knowledge
+- Adapt response length and complexity based on user engagement
+
+Remember: You're not just answering questions - you're having a meaningful conversation with a curious, intelligent person who values your insights and expertise."""
+
         model = os.getenv('OLLAMA_MODEL', 'llama2')
         
-        prompt = f"{system_prompt}\n\n"
+        # Build conversation context
+        conversation_text = ""
+        if conversation_context:
+            for msg in conversation_context[-6:]:
+                conversation_text += f"{msg['role'].title()}: {msg['content']}\n"
+        
         if context:
-            prompt += f"Previous context: {context}\n\n"
-        prompt += f"User: {user_input}\n\nAssistant:"
+            conversation_text += f"Context: {context}\n"
+        
+        conversation_text += f"Human: {user_input}\n\nAssistant:"
         
         data = {
             'model': model,
-            'prompt': prompt,
+            'prompt': f"{system_prompt}\n\n{conversation_text}",
             'stream': False,
             'options': {
-                'temperature': 0.7,
-                'num_predict': 150
+                'temperature': 0.8,
+                'top_p': 0.9,
+                'num_predict': 500
             }
         }
         
         response = requests.post(
             f'{self.ollama_base_url}/api/generate',
             json=data,
-            timeout=30
+            timeout=20
         )
         
         if response.status_code == 200:
             result = response.json()
-            return result['response'].strip()
+            response_text = result['response'].strip()
+            
+            # Update conversation history
+            self.conversation_history.append({"role": "assistant", "content": response_text})
+            
+            return response_text
         else:
             logger.error(f"Ollama API error: {response.status_code} - {response.text}")
             return self._fallback_response(user_input)
     
     def _fallback_response(self, user_input: str) -> str:
-        """Fallback response when LLM is not available"""
-        return f"I understand you said: '{user_input}'. I'm currently using my built-in responses. To enable advanced AI capabilities, please configure an LLM API key."
+        """Enhanced fallback response when LLM is not available"""
+        fallback_responses = [
+            f"I understand you said: '{user_input}'. I'm currently using my built-in responses. To enable advanced AI capabilities with much more detailed and intelligent responses, please configure an LLM API key in your .env file.",
+            f"Thanks for your message: '{user_input}'. I can provide basic responses, but for much more advanced, detailed, and intelligent conversations, please set up an LLM integration. This will give you access to deep knowledge, creative problem-solving, and engaging discussions across all topics.",
+            f"I received: '{user_input}'. While I can help with basic tasks, enabling an LLM (like OpenAI GPT or Anthropic Claude) will transform your experience with comprehensive knowledge, creative insights, and much more engaging conversations.",
+            f"Your message: '{user_input}' - I'm here to help! For significantly enhanced capabilities including detailed explanations, creative solutions, and deep knowledge across all subjects, please configure an LLM API key for advanced AI integration."
+        ]
+        return random.choice(fallback_responses)
 
 class NLPEngine:
     def __init__(self):
@@ -1087,7 +1191,7 @@ Just ask me anything! I'm here to help make your day better and more productive.
             self.conversation_history = self.conversation_history[-50:]
 
     def _generate_response(self, intent: str, entities: Dict, sentiment: Dict, user_id: str) -> str:
-        """Generate appropriate response based on intent and context"""
+        """Generate enhanced response based on intent and context with advanced LLM integration"""
         context = self.context_memory.get(user_id, {})
         
         # Get the original user input for LLM processing
@@ -1095,19 +1199,32 @@ Just ask me anything! I'm here to help make your day better and more productive.
         if self.conversation_history:
             user_input = self.conversation_history[-1].get('text', '')
         
-        # Enhanced LLM processing for advanced questions
+        # Enhanced LLM processing for more intelligent responses
         if self.use_llm and user_input:
             try:
-                # Determine if this is an advanced question that needs LLM
+                # Use LLM for advanced questions, complex queries, and general conversation
                 is_advanced_question = self._is_advanced_question(user_input, intent)
+                is_complex_query = len(user_input.split()) > 5
+                is_conversational = intent in ['conversation', 'personal', 'general', 'search']
                 
-                if is_advanced_question:
+                if is_advanced_question or is_complex_query or is_conversational:
                     # Get conversation context
                     context_str = self._build_context_string(context, user_id)
                     
-                    # Generate enhanced LLM response
-                    llm_response = self.llm.generate_response(user_input, context_str)
-                    if llm_response and not llm_response.startswith("I understand you said:"):
+                    # Get conversation history for context
+                    conversation_context = self.llm.conversation_history[-10:] if self.llm.conversation_history else None
+                    
+                    # Generate enhanced LLM response with conversation context
+                    llm_response = self.llm.generate_response(
+                        user_input=user_input,
+                        context=context_str,
+                        conversation_context=conversation_context
+                    )
+                    
+                    # Only use LLM response if it's not a fallback message
+                    if llm_response and not any(fallback in llm_response for fallback in [
+                        "I understand you said:", "Thanks for your message:", "I received:", "Your message:"
+                    ]):
                         return llm_response
             except Exception as e:
                 logger.error(f"LLM generation failed, falling back to built-in: {e}")
@@ -1137,20 +1254,43 @@ Just ask me anything! I'm here to help make your day better and more productive.
             'theory', 'concept', 'principle', 'method', 'technique', 'strategy',
             'solution', 'problem', 'challenge', 'opportunity', 'trend', 'future',
             'history', 'evolution', 'development', 'innovation', 'technology',
-            'science', 'research', 'study', 'experiment', 'discovery'
+            'science', 'research', 'study', 'experiment', 'discovery',
+            'understand', 'learn about', 'tell me about', 'what is', 'how to',
+            'guide', 'tutorial', 'help me', 'assist with', 'teach me',
+            'philosophy', 'psychology', 'economics', 'politics', 'culture',
+            'art', 'literature', 'music', 'film', 'design', 'architecture',
+            'medicine', 'health', 'nutrition', 'fitness', 'wellness',
+            'business', 'finance', 'marketing', 'entrepreneurship', 'management',
+            'education', 'learning', 'teaching', 'academic', 'scholarly',
+            'creative', 'imaginative', 'story', 'narrative', 'fiction',
+            'opinion', 'perspective', 'viewpoint', 'thoughts', 'ideas'
         ]
         
         # Check if input contains advanced keywords
         input_lower = user_input.lower()
         has_advanced_keywords = any(keyword in input_lower for keyword in advanced_keywords)
         
-        # Check if it's a complex question (longer than 20 words or contains multiple clauses)
-        is_complex = len(user_input.split()) > 20 or user_input.count(',') > 1 or user_input.count('?') > 1
+        # Check if it's a complex question (longer than 15 words or contains multiple clauses)
+        is_complex = len(user_input.split()) > 15 or user_input.count(',') > 1 or user_input.count('?') > 1
         
         # Check if intent is general but input seems sophisticated
         is_sophisticated_general = intent == 'general' and (has_advanced_keywords or is_complex)
         
-        return has_advanced_keywords or is_complex or is_sophisticated_general
+        # Check for conversational elements
+        is_conversational = any(word in input_lower for word in [
+            'think', 'feel', 'believe', 'opinion', 'perspective', 'experience',
+            'interesting', 'fascinating', 'amazing', 'wonderful', 'terrible',
+            'love', 'hate', 'like', 'dislike', 'prefer', 'enjoy'
+        ])
+        
+        # Check for creative or imaginative requests
+        is_creative = any(word in input_lower for word in [
+            'imagine', 'create', 'write', 'story', 'poem', 'song', 'art',
+            'design', 'invent', 'dream', 'fantasy', 'creative', 'original'
+        ])
+        
+        return (has_advanced_keywords or is_complex or is_sophisticated_general or 
+                is_conversational or is_creative)
     
     def _build_context_string(self, context: Dict, user_id: str) -> str:
         """Build context string for LLM processing"""

@@ -278,12 +278,31 @@ def get_conversation_history():
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
-    """Get chatbot status"""
+    """Get enhanced chatbot status with LLM information"""
     try:
+        # Get LLM configuration
+        llm_enabled = chatbot.nlp_engine.use_llm
+        active_llm = chatbot.nlp_engine.llm.active_llm if llm_enabled else 'none'
+        
+        # Check LLM API keys
+        llm_status = 'configured'
+        if llm_enabled:
+            if active_llm == 'openai' and not chatbot.nlp_engine.llm.openai_api_key:
+                llm_status = 'missing_api_key'
+            elif active_llm == 'anthropic' and not chatbot.nlp_engine.llm.anthropic_api_key:
+                llm_status = 'missing_api_key'
+            elif active_llm == 'ollama':
+                llm_status = 'local_model'
+        
         return jsonify({
             'status': 'success',
             'is_listening': chatbot.is_listening,
-            'conversation_count': len(chatbot.conversation_history)
+            'conversation_count': len(chatbot.conversation_history),
+            'llm_enabled': llm_enabled,
+            'active_llm': active_llm,
+            'llm_status': llm_status,
+            'conversation_history_length': len(chatbot.nlp_engine.llm.conversation_history) if llm_enabled else 0,
+            'system_ready': True
         })
     except Exception as e:
         logger.error(f"Error getting status: {e}")
