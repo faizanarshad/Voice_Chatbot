@@ -1206,8 +1206,11 @@ Just ask me anything! I'm here to help make your day better and more productive.
                 is_advanced_question = self._is_advanced_question(user_input, intent)
                 is_complex_query = len(user_input.split()) > 5
                 is_conversational = intent in ['conversation', 'personal', 'general', 'search']
+                is_creative_request = any(word in user_input.lower() for word in [
+                    'create', 'write', 'story', 'poem', 'imagine', 'design', 'invent'
+                ])
                 
-                if is_advanced_question or is_complex_query or is_conversational:
+                if is_advanced_question or is_complex_query or is_conversational or is_creative_request:
                     # Get conversation context
                     context_str = self._build_context_string(context, user_id)
                     
