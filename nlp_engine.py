@@ -3,6 +3,7 @@ import json
 import random
 import requests
 import os
+import time
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 import logging
@@ -280,23 +281,52 @@ Remember: You're not just answering questions - you're having a meaningful conve
             }
         }
         
-        response = requests.post(
-            f'{self.ollama_base_url}/api/generate',
-            json=data,
-            timeout=60
-        )
+        # Retry mechanism for Ollama
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                logger.info(f"Ollama attempt {attempt + 1}/{max_retries}")
+                response = requests.post(
+                    f'{self.ollama_base_url}/api/generate',
+                    json=data,
+                    timeout=120
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    response_text = result['response'].strip()
+                    
+                    # Update conversation history
+                    self.conversation_history.append({"role": "assistant", "content": response_text})
+                    
+                    logger.info(f"Ollama success on attempt {attempt + 1}")
+                    return response_text
+                else:
+                    logger.error(f"Ollama API error: {response.status_code} - {response.text}")
+                    if attempt < max_retries - 1:
+                        time.sleep(2)  # Wait before retry
+                        continue
+                    else:
+                        return self._fallback_response(user_input)
+                        
+            except requests.exceptions.Timeout:
+                logger.warning(f"Ollama timeout on attempt {attempt + 1}")
+                if attempt < max_retries - 1:
+                    time.sleep(5)  # Wait longer before retry
+                    continue
+                else:
+                    logger.error("Ollama failed after all retries")
+                    return self._fallback_response(user_input)
+                    
+            except Exception as e:
+                logger.error(f"Ollama error on attempt {attempt + 1}: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                    continue
+                else:
+                    return self._fallback_response(user_input)
         
-        if response.status_code == 200:
-            result = response.json()
-            response_text = result['response'].strip()
-            
-            # Update conversation history
-            self.conversation_history.append({"role": "assistant", "content": response_text})
-            
-            return response_text
-        else:
-            logger.error(f"Ollama API error: {response.status_code} - {response.text}")
-            return self._fallback_response(user_input)
+        return self._fallback_response(user_input)
     
     def _fallback_response(self, user_input: str) -> str:
         """Enhanced fallback response when LLM is not available"""
@@ -1239,6 +1269,10 @@ Just ask me anything! I'm here to help make your day better and more productive.
                     'create', 'write', 'story', 'poem', 'imagine', 'design', 'invent'
                 ])
                 
+                # Debug logging
+                logger.info(f"LLM Debug - Intent: {intent}, User Input: {user_input}")
+                logger.info(f"LLM Debug - Advanced: {is_advanced_question}, Complex: {is_complex_query}, Conversational: {is_conversational}, Creative: {is_creative_request}")
+                
                 if is_advanced_question or is_complex_query or is_conversational or is_creative_request:
                     # Get conversation context
                     context_str = self._build_context_string(context, user_id)
@@ -1247,17 +1281,23 @@ Just ask me anything! I'm here to help make your day better and more productive.
                     conversation_context = self.llm.conversation_history[-10:] if self.llm.conversation_history else None
                     
                     # Generate enhanced LLM response with conversation context
+                    logger.info(f"LLM Debug - Calling LLM with input: {user_input}")
                     llm_response = self.llm.generate_response(
                         user_input=user_input,
                         context=context_str,
                         conversation_context=conversation_context
                     )
                     
+                    logger.info(f"LLM Debug - LLM Response: {llm_response[:200]}...")
+                    
                     # Only use LLM response if it's not a fallback message
                     if llm_response and not any(fallback in llm_response for fallback in [
                         "I understand you said:", "Thanks for your message:", "I received:", "Your message:"
                     ]):
+                        logger.info("LLM Debug - Using LLM response")
                         return llm_response
+                    else:
+                        logger.info("LLM Debug - LLM returned fallback, using built-in response")
             except Exception as e:
                 logger.error(f"LLM generation failed, falling back to built-in: {e}")
         
