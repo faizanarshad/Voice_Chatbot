@@ -283,7 +283,7 @@ Remember: You're not just answering questions - you're having a meaningful conve
         response = requests.post(
             f'{self.ollama_base_url}/api/generate',
             json=data,
-            timeout=20
+            timeout=60
         )
         
         if response.status_code == 200:
@@ -400,6 +400,14 @@ class NLPEngine:
                 r'\b(talk|chat|conversation|discuss|tell me|share)\b',
                 r'\b(how are you feeling|what do you think|your opinion)\b',
                 r'\b(interesting|fascinating|amazing|wow|cool|awesome)\b'
+            ],
+            'creative': [
+                r'\b(create|write|make|generate|compose|craft)\b.*\b(story|poem|song|script|tale|narrative)\b',
+                r'\b(write|create|make)\b.*\b(creative|imaginative|fictional|fantasy)\b',
+                r'\b(tell me a story|write a story|create a story)\b',
+                r'\b(imagine|imagine if|what if)\b',
+                r'\b(robot|ai|artificial intelligence)\b.*\b(learning|painting|creating|writing)\b',
+                r'\b(creative|imaginative|fictional)\b.*\b(about|story|tale)\b'
             ],
             'personal': [
                 r'\b(your name|who are you|what are you|your age|your job)\b',
@@ -898,6 +906,11 @@ Just ask me anything! I'm here to help make your day better and more productive.
                 "I love having meaningful conversations! I find human interactions fascinating and I'm always eager to learn and share thoughts.",
                 "That's wonderful! I enjoy deep conversations and learning about different perspectives. It makes our interactions so much more engaging."
             ],
+            'creative': [
+                "I'd love to help you with creative writing! I can create stories, poems, scripts, and imaginative content. What kind of creative piece would you like me to write?",
+                "Creative writing is one of my passions! I can craft stories, compose poems, write scripts, and generate imaginative content. What creative project can I help with?",
+                "I'm excited to help with creative content! I can write stories, create poems, compose songs, and generate imaginative narratives. What creative idea do you have in mind?"
+            ],
             'personal': [
                 self._get_personal_info(),
                 "I'm an AI voice assistant created to help you with various tasks and have meaningful conversations. I don't have physical form, but I'm here to assist and learn from our interactions!",
@@ -1026,6 +1039,14 @@ Just ask me anything! I'm here to help make your day better and more productive.
                 r'\b(talk|chat|conversation|discuss|opinion|think)\b',
                 r'\b(how do you feel|what do you think|your thoughts)\b'
             ],
+            'creative': [
+                r'\b(create|write|make|generate|compose|craft)\b.*\b(story|poem|song|script|tale|narrative)\b',
+                r'\b(write|create|make)\b.*\b(creative|imaginative|fictional|fantasy)\b',
+                r'\b(tell me a story|write a story|create a story)\b',
+                r'\b(imagine|imagine if|what if)\b',
+                r'\b(robot|ai|artificial intelligence)\b.*\b(learning|painting|creating|writing)\b',
+                r'\b(creative|imaginative|fictional)\b.*\b(about|story|tale)\b'
+            ],
             'personal': [
                 r'\b(who are you|what are you|your name|about you)\b',
                 r'\b(are you real|are you human|your age|your job)\b'
@@ -1103,6 +1124,10 @@ Just ask me anything! I'm here to help make your day better and more productive.
                     # Boost advanced question intent
                     if intent == 'advanced_question':
                         score += 25
+                    
+                    # Boost creative intent
+                    if intent == 'creative':
+                        score += 30
                     
                     # Boost unclear intent for very short/nonsensical input
                     if intent == 'unclear':
@@ -1210,7 +1235,7 @@ Just ask me anything! I'm here to help make your day better and more productive.
                 is_advanced_question = self._is_advanced_question(user_input, intent)
                 is_complex_query = len(user_input.split()) > 5
                 is_conversational = intent in ['conversation', 'personal', 'general', 'search']
-                is_creative_request = any(word in user_input.lower() for word in [
+                is_creative_request = intent == 'creative' or any(word in user_input.lower() for word in [
                     'create', 'write', 'story', 'poem', 'imagine', 'design', 'invent'
                 ])
                 
