@@ -6,6 +6,7 @@
 [![Flask](https://img.shields.io/badge/Flask-2.3+-green.svg)](https://flask.palletsprojects.com)
 [![AI](https://img.shields.io/badge/AI-LLM%20Powered-purple.svg)](https://openai.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Contact](https://img.shields.io/badge/Contact-faizanarshad124@gmail.com-blue.svg)](mailto:faizanarshad124@gmail.com)
 
 ## 🌟 Overview
 

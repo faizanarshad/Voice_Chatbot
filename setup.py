@@ -16,8 +16,8 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 setup(
     name="ai-voice-assistant-pro",
     version="1.0.0",
-    author="AI Voice Assistant Pro Team",
-    author_email="support@voiceassistant.pro",
+    author="Faizan Arshad",
+    author_email="faizanarshad124@gmail.com",
     description="Advanced AI-Powered Voice Assistant with Modern Web Interface",
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "ai-voice-assistant-pro"
 version = "1.0.0"
 authors = [
-    {name = "AI Voice Assistant Pro Team", email = "support@voiceassistant.pro"},
+    {name = "Faizan Arshad", email = "faizanarshad124@gmail.com"},
 ]
 description = "Advanced AI-Powered Voice Assistant with Modern Web Interface"
 readme = "README.md"
