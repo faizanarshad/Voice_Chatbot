@@ -175,6 +175,43 @@ class VoiceChatbot:
             logger.error(f"Error in speech recognition: {e}")
             return None
     
+    def listen_for_speech_from_file(self, audio_file):
+        """Listen for speech from uploaded audio file and convert to text"""
+        try:
+            logger.info(f"Processing audio file: {audio_file.filename}")
+            
+            # Save uploaded file temporarily
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
+                audio_file.save(tmp_file.name)
+                temp_audio_path = tmp_file.name
+            
+            try:
+                # Load audio file with speech_recognition
+                with sr.AudioFile(temp_audio_path) as source:
+                    audio = self.recognizer.record(source)
+                
+                logger.info("Processing audio file...")
+                text = self.recognizer.recognize_google(audio)
+                logger.info(f"Recognized from file: {text}")
+                return text.lower()
+                
+            finally:
+                # Clean up temporary file
+                import os
+                if os.path.exists(temp_audio_path):
+                    os.unlink(temp_audio_path)
+            
+        except sr.UnknownValueError:
+            logger.info("Could not understand audio from file")
+            return None
+        except sr.RequestError as e:
+            logger.error(f"Could not request results from audio file: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error processing audio file: {e}")
+            return None
+    
     def speak(self, text):
         """Convert text to speech using multiple TTS methods with fallbacks"""
         logger.info(f"🗣️ Speaking: {text}")

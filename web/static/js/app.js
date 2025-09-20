@@ -2,6 +2,9 @@
 let isListening = false;
 let recordingTimer = null;
 let startTime = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let stream = null;
 
 // DOM elements
 const startBtn = document.getElementById('startBtn');
@@ -47,38 +50,64 @@ function initializeApp() {
 }
 
 // Voice listening functions
-function startVoiceListening() {
+async function startVoiceListening() {
     if (isListening) return;
     
-    isListening = true;
-    startBtn.style.display = 'none';
-    stopBtn.style.display = 'inline-flex';
-    
-    // Show recording timer
-    recordingTimerEl.style.display = 'flex';
-    startTime = Date.now();
-    updateTimer();
-    recordingTimer = setInterval(updateTimer, 1000);
-    
-    // Update status
-    updateStatus('listening', 'Listening...');
-    voiceStatus.textContent = 'Listening... Speak now!';
-    
-    // Make API call to start listening
-    fetch('/api/start-listening', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Started listening:', data);
-    })
-    .catch(error => {
-        console.error('Error starting listening:', error);
-        stopVoiceListening();
-    });
+    try {
+        // Request microphone access
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Initialize MediaRecorder
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        
+        // Set up event handlers
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+            processAudioRecording();
+        };
+        
+        isListening = true;
+        startBtn.style.display = 'none';
+        stopBtn.style.display = 'inline-flex';
+        
+        // Show recording timer
+        recordingTimerEl.style.display = 'flex';
+        startTime = Date.now();
+        updateTimer();
+        recordingTimer = setInterval(updateTimer, 1000);
+        
+        // Update status
+        updateStatus('listening', 'Listening...');
+        voiceStatus.textContent = 'Listening... Speak now!';
+        
+        // Start recording
+        mediaRecorder.start();
+        
+        // Make API call to start listening
+        fetch('/api/start-listening', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Started listening:', data);
+        })
+        .catch(error => {
+            console.error('Error starting listening:', error);
+            stopVoiceListening();
+        });
+        
+    } catch (error) {
+        console.error('Error accessing microphone:', error);
+        updateStatus('error', 'Microphone access denied');
+        alert('Please allow microphone access to use voice features.');
+    }
 }
 
 function stopVoiceListening() {
@@ -87,6 +116,17 @@ function stopVoiceListening() {
     isListening = false;
     startBtn.style.display = 'inline-flex';
     stopBtn.style.display = 'none';
+    
+    // Stop recording
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+    }
+    
+    // Stop stream
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+    }
     
     // Hide recording timer immediately
     recordingTimerEl.style.display = 'none';
@@ -121,6 +161,45 @@ function stopVoiceListening() {
         voiceStatus.textContent = 'Error processing speech';
         updateStatus('ready', 'Ready');
     });
+}
+
+function processAudioRecording() {
+    if (audioChunks.length === 0) {
+        updateStatus('ready', 'Ready');
+        voiceStatus.textContent = 'No audio recorded';
+        return;
+    }
+    
+    // Create audio blob
+    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.wav');
+    
+    // Send audio to server for processing
+    fetch('/api/process-audio', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.text && data.response) {
+            addMessage('user', data.text);
+            addMessage('bot', data.response);
+            voiceStatus.textContent = 'Ready for next command';
+            updateStatus('ready', 'Ready');
+        } else if (data.error) {
+            voiceStatus.textContent = 'Error: ' + data.error;
+            updateStatus('ready', 'Ready');
+        }
+    })
+    .catch(error => {
+        console.error('Error processing audio:', error);
+        voiceStatus.textContent = 'Error processing speech';
+        updateStatus('ready', 'Ready');
+    });
+    
+    // Reset audio chunks
+    audioChunks = [];
 }
 
 function updateTimer() {

@@ -164,6 +164,81 @@ def register_routes(app, chatbot):
             logger.error(f"Error getting features: {e}")
             return jsonify({'error': str(e)}), 500
     
+    @app.route('/api/start-listening', methods=['POST'])
+    def start_listening():
+        """Start voice listening session"""
+        try:
+            if chatbot.is_listening:
+                return jsonify({'message': 'Already listening'}), 200
+            
+            chatbot.is_listening = True
+            
+            # Start listening in a separate thread
+            import threading
+            listening_thread = threading.Thread(target=chatbot.listen_for_speech)
+            listening_thread.daemon = True
+            listening_thread.start()
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Started listening',
+                'is_listening': True,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            logger.error(f"Error starting listening: {e}")
+            return jsonify({'error': str(e)}), 500
+    
+    @app.route('/api/stop-listening', methods=['POST'])
+    def stop_listening():
+        """Stop voice listening session"""
+        try:
+            chatbot.is_listening = False
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Stopped listening',
+                'is_listening': False,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            logger.error(f"Error stopping listening: {e}")
+            return jsonify({'error': str(e)}), 500
+    
+    @app.route('/api/listen', methods=['POST'])
+    def listen_for_voice():
+        """Listen for voice input and return transcribed text"""
+        try:
+            if not chatbot.is_listening:
+                chatbot.is_listening = True
+            
+            # Listen for speech
+            text = chatbot.listen_for_speech()
+            
+            if text:
+                # Process with NLP engine
+                response = chatbot.process_nlp(text)
+                
+                return jsonify({
+                    'text': text,
+                    'response': response,
+                    'is_listening': False,
+                    'timestamp': datetime.now().isoformat()
+                })
+            else:
+                return jsonify({
+                    'error': 'Could not understand speech',
+                    'is_listening': False,
+                    'timestamp': datetime.now().isoformat()
+                }), 400
+                
+        except Exception as e:
+            logger.error(f"Error in voice listening: {e}")
+            chatbot.is_listening = False
+            return jsonify({'error': str(e)}), 500
+    
     @app.route('/api/health', methods=['GET'])
     def health_check():
         """Health check endpoint for monitoring"""
