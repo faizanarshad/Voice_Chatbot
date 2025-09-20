@@ -39,7 +39,17 @@ class VoiceChatbot:
     def __init__(self):
         self.recognizer = sr.Recognizer()
         self.microphone = sr.Microphone()
-        self.engine = pyttsx3.init()
+        
+        # Initialize TTS engine with error handling
+        try:
+            self.engine = pyttsx3.init()
+            self.tts_available = True
+            logger.info("TTS engine initialized successfully")
+        except Exception as e:
+            logger.warning(f"TTS engine initialization failed: {e}")
+            self.engine = None
+            self.tts_available = False
+        
         self.audio_queue = queue.Queue()
         self.is_listening = False
         
@@ -47,47 +57,48 @@ class VoiceChatbot:
         self.nlp_engine = NLPEngine()
         
         # Configure text-to-speech engine
-        tts_config = Config.get_tts_config()
-        self.engine.setProperty('rate', tts_config['rate'])
-        self.engine.setProperty('volume', tts_config['volume'])
-        
-        # Get available voices and set a good one
-        voices = self.engine.getProperty('voices')
-        if voices:
-            if tts_config['voice_id']:
-                self.engine.setProperty('voice', tts_config['voice_id'])
-            else:
-                # Try to find a better voice for clarity
-                preferred_voices = [
-                    'com.apple.speech.synthesis.voice.alex',
-                    'com.apple.speech.synthesis.voice.samantha',
-                    'com.apple.speech.synthesis.voice.daniel',
-                    'com.apple.speech.synthesis.voice.karen',
-                    'com.apple.speech.synthesis.voice.tom'
-                ]
-                voice_found = False
-                
-                for preferred_voice in preferred_voices:
-                    for voice in voices:
-                        if preferred_voice in voice.id.lower():
-                            self.engine.setProperty('voice', voice.id)
-                            voice_found = True
-                            logger.info(f"Using voice: {voice.name} ({voice.id})")
+        if self.tts_available:
+            tts_config = Config.get_tts_config()
+            self.engine.setProperty('rate', tts_config['rate'])
+            self.engine.setProperty('volume', tts_config['volume'])
+            
+            # Get available voices and set a good one
+            voices = self.engine.getProperty('voices')
+            if voices:
+                if tts_config['voice_id']:
+                    self.engine.setProperty('voice', tts_config['voice_id'])
+                else:
+                    # Try to find a better voice for clarity
+                    preferred_voices = [
+                        'com.apple.speech.synthesis.voice.alex',
+                        'com.apple.speech.synthesis.voice.samantha',
+                        'com.apple.speech.synthesis.voice.daniel',
+                        'com.apple.speech.synthesis.voice.karen',
+                        'com.apple.speech.synthesis.voice.tom'
+                    ]
+                    voice_found = False
+                    
+                    for preferred_voice in preferred_voices:
+                        for voice in voices:
+                            if preferred_voice in voice.id.lower():
+                                self.engine.setProperty('voice', voice.id)
+                                voice_found = True
+                                logger.info(f"Using voice: {voice.name} ({voice.id})")
+                                break
+                        if voice_found:
                             break
-                    if voice_found:
-                        break
-                
-                if not voice_found:
-                    # Use a clear English voice if available
-                    for voice in voices:
-                        if 'en-us' in voice.id.lower() or 'en_gb' in voice.id.lower():
-                            self.engine.setProperty('voice', voice.id)
-                            logger.info(f"Using English voice: {voice.name} ({voice.id})")
-                            break
-                    else:
-                        # Use the first available voice
-                        self.engine.setProperty('voice', voices[0].id)
-                        logger.info(f"Using default voice: {voices[0].name} ({voices[0].id})")
+                    
+                    if not voice_found:
+                        # Use a clear English voice if available
+                        for voice in voices:
+                            if 'en-us' in voice.id.lower() or 'en_gb' in voice.id.lower():
+                                self.engine.setProperty('voice', voice.id)
+                                logger.info(f"Using English voice: {voice.name} ({voice.id})")
+                                break
+                        else:
+                            # Use the first available voice
+                            self.engine.setProperty('voice', voices[0].id)
+                            logger.info(f"Using default voice: {voices[0].name} ({voices[0].id})")
                 
                 # Set rate and volume
                 self.engine.setProperty('rate', Config.TTS_RATE)
@@ -140,10 +151,17 @@ class VoiceChatbot:
             # Clean up text for better pronunciation
             cleaned_text = text.replace(':', ' ').replace('-', ' ').replace('(', ' ').replace(')', ' ')
             
-            # Simple approach - just speak the text clearly
-            self.engine.say(cleaned_text)
-            self.engine.runAndWait()
-            logger.info("Speech completed successfully")
+            if self.tts_available and self.engine:
+                # Use pyttsx3 if available
+                self.engine.say(cleaned_text)
+                self.engine.runAndWait()
+                logger.info("Speech completed successfully")
+            else:
+                # Fallback to system 'say' command on macOS
+                logger.info("Using fallback TTS (system 'say' command)...")
+                import subprocess
+                subprocess.run(['say', cleaned_text], check=True)
+                logger.info("Fallback TTS completed")
                 
         except Exception as e:
             logger.error(f"Error in text-to-speech: {e}")
