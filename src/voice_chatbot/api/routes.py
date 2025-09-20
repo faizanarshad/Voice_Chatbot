@@ -239,6 +239,32 @@ def register_routes(app, chatbot):
             chatbot.is_listening = False
             return jsonify({'error': str(e)}), 500
     
+    @app.route('/api/process-voice', methods=['POST'])
+    def process_voice():
+        """Process voice input directly without file upload"""
+        try:
+            # Listen for speech directly
+            text = chatbot.listen_for_speech()
+            
+            if text:
+                # Process with NLP engine
+                response = chatbot.process_nlp(text)
+                
+                return jsonify({
+                    'text': text,
+                    'response': response,
+                    'timestamp': datetime.now().isoformat()
+                })
+            else:
+                return jsonify({
+                    'error': 'Could not understand speech',
+                    'timestamp': datetime.now().isoformat()
+                }), 400
+                
+        except Exception as e:
+            logger.error(f"Error in voice processing: {e}")
+            return jsonify({'error': str(e)}), 500
+    
     @app.route('/api/health', methods=['GET'])
     def health_check():
         """Health check endpoint for monitoring"""

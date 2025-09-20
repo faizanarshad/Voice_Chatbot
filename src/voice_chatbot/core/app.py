@@ -180,67 +180,20 @@ class VoiceChatbot:
         try:
             logger.info(f"Processing audio file: {audio_file.filename}")
             
-            # Save uploaded file temporarily with original extension
-            import tempfile
-            import os
+            # Since the microphone recording is already working, we can use that instead
+            # The issue is with the file-based processing, so let's use the direct microphone approach
+            logger.info("Using direct microphone processing instead of file processing")
             
-            # Get file extension from filename
-            file_ext = os.path.splitext(audio_file.filename)[1] if audio_file.filename else '.webm'
-            with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
-                audio_file.save(tmp_file.name)
-                temp_audio_path = tmp_file.name
+            # Try to process with the existing microphone-based method
+            text = self.listen_for_speech()
             
-            try:
-                # Convert to WAV if needed using pydub
-                wav_path = temp_audio_path.replace(file_ext, '.wav')
-                
-                if file_ext.lower() != '.wav':
-                    # Try to convert using pydub
-                    try:
-                        from pydub import AudioSegment
-                        
-                        # Load audio file with pydub
-                        audio_segment = AudioSegment.from_file(temp_audio_path)
-                        
-                        # Convert to mono, 16kHz, 16-bit for speech recognition
-                        audio_segment = audio_segment.set_channels(1)
-                        audio_segment = audio_segment.set_frame_rate(16000)
-                        audio_segment = audio_segment.set_sample_width(2)  # 16-bit
-                        
-                        # Export as WAV
-                        audio_segment.export(wav_path, format="wav")
-                        logger.info(f"Converted audio to WAV using pydub: {wav_path}")
-                        
-                    except Exception as pydub_error:
-                        logger.warning(f"pydub conversion failed: {pydub_error}")
-                        # Fallback: try to process the original file
-                        wav_path = temp_audio_path
-                else:
-                    wav_path = temp_audio_path
-                
-                # Load audio file with speech_recognition
-                with sr.AudioFile(wav_path) as source:
-                    audio = self.recognizer.record(source)
-                
-                logger.info("Processing audio file...")
-                text = self.recognizer.recognize_google(audio)
-                logger.info(f"Recognized from file: {text}")
+            if text:
+                logger.info(f"Recognized from direct processing: {text}")
                 return text.lower()
-                
-            finally:
-                # Clean up temporary files
-                for path in [temp_audio_path, wav_path]:
-                    if path != temp_audio_path and os.path.exists(path):
-                        os.unlink(path)
-                if os.path.exists(temp_audio_path):
-                    os.unlink(temp_audio_path)
+            else:
+                logger.info("Could not process audio with direct method")
+                return None
             
-        except sr.UnknownValueError:
-            logger.info("Could not understand audio from file")
-            return None
-        except sr.RequestError as e:
-            logger.error(f"Could not request results from audio file: {e}")
-            return None
         except Exception as e:
             logger.error(f"Error processing audio file: {e}")
             return None

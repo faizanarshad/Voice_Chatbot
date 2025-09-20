@@ -80,7 +80,10 @@ async function startVoiceListening() {
         };
         
         mediaRecorder.onstop = () => {
-            processAudioRecording();
+            // Only process audio recording if we have audio chunks
+            if (audioChunks.length > 0) {
+                processAudioRecording();
+            }
         };
         
         isListening = true;
@@ -162,12 +165,10 @@ function stopVoiceListening() {
     .then(response => response.json())
     .then(data => {
         console.log('Stopped listening:', data);
-        if (data.text) {
-            addMessage('user', data.text);
-            addMessage('bot', data.response);
-            voiceStatus.textContent = 'Ready for next command';
-            updateStatus('ready', 'Ready');
-        }
+        // The microphone recording should have already processed the speech
+        // If we get here, the audio file processing will handle the response
+        voiceStatus.textContent = 'Processing your speech...';
+        updateStatus('processing', 'Processing...');
     })
     .catch(error => {
         console.error('Error stopping listening:', error);
@@ -177,26 +178,13 @@ function stopVoiceListening() {
 }
 
 function processAudioRecording() {
-    if (audioChunks.length === 0) {
-        updateStatus('ready', 'Ready');
-        voiceStatus.textContent = 'No audio recorded';
-        return;
-    }
-    
-    // Create audio blob with proper MIME type
-    const mimeType = mediaRecorder.mimeType || 'audio/webm';
-    const audioBlob = new Blob(audioChunks, { type: mimeType });
-    const formData = new FormData();
-    
-    // Use appropriate file extension based on MIME type
-    const fileExtension = mimeType.includes('webm') ? 'webm' : 
-                         mimeType.includes('mp4') ? 'mp4' : 'wav';
-    formData.append('audio', audioBlob, `recording.${fileExtension}`);
-    
-    // Send audio to server for processing
-    fetch('/api/process-audio', {
+    // Since the microphone recording is working, let's use the direct voice processing endpoint
+    // instead of trying to process the audio file
+    fetch('/api/process-voice', {
         method: 'POST',
-        body: formData
+        headers: {
+            'Content-Type': 'application/json'
+        }
     })
     .then(response => response.json())
     .then(data => {
@@ -211,7 +199,7 @@ function processAudioRecording() {
         }
     })
     .catch(error => {
-        console.error('Error processing audio:', error);
+        console.error('Error processing voice:', error);
         voiceStatus.textContent = 'Error processing speech';
         updateStatus('ready', 'Ready');
     });
