@@ -103,21 +103,40 @@ async function startVoiceListening() {
         // Start recording
         mediaRecorder.start();
         
-        // Make API call to start listening
-        fetch('/api/start-listening', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Started listening:', data);
-        })
-        .catch(error => {
-            console.error('Error starting listening:', error);
+    // Make API call to start listening
+    fetch('/api/start-listening', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Started listening:', data);
+        
+        // If we got text and response, process it
+        if (data.text && data.response) {
+            // Stop the recording UI
             stopVoiceListening();
-        });
+            
+            // Add messages to conversation
+            addMessage('user', data.text);
+            addMessage('bot', data.response);
+            
+            // Update status
+            voiceStatus.textContent = 'Ready for next command';
+            updateStatus('ready', 'Ready');
+        } else if (data.message) {
+            // Handle no speech detected
+            stopVoiceListening();
+            voiceStatus.textContent = data.message;
+            updateStatus('ready', 'Ready');
+        }
+    })
+    .catch(error => {
+        console.error('Error starting listening:', error);
+        stopVoiceListening();
+    });
         
     } catch (error) {
         console.error('Error accessing microphone:', error);
@@ -178,34 +197,15 @@ function stopVoiceListening() {
 }
 
 function processAudioRecording() {
-    // Since the microphone recording is working, let's use the direct voice processing endpoint
-    // instead of trying to process the audio file
-    fetch('/api/process-voice', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.text && data.response) {
-            addMessage('user', data.text);
-            addMessage('bot', data.response);
-            voiceStatus.textContent = 'Ready for next command';
-            updateStatus('ready', 'Ready');
-        } else if (data.error) {
-            voiceStatus.textContent = 'Error: ' + data.error;
-            updateStatus('ready', 'Ready');
-        }
-    })
-    .catch(error => {
-        console.error('Error processing voice:', error);
-        voiceStatus.textContent = 'Error processing speech';
-        updateStatus('ready', 'Ready');
-    });
-    
-    // Reset audio chunks
+    // Since the microphone recording is already working, we don't need to process the audio file
+    // The speech recognition is happening in real-time during recording
+    // Just reset the audio chunks and update status
     audioChunks = [];
+    
+    // The actual speech processing happens during the microphone recording
+    // and the response should already be handled by the existing flow
+    voiceStatus.textContent = 'Voice recording completed';
+    updateStatus('ready', 'Ready');
 }
 
 function updateTimer() {

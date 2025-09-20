@@ -166,28 +166,38 @@ def register_routes(app, chatbot):
     
     @app.route('/api/start-listening', methods=['POST'])
     def start_listening():
-        """Start voice listening session"""
+        """Start voice listening session and return recognized text"""
         try:
             if chatbot.is_listening:
                 return jsonify({'message': 'Already listening'}), 200
             
             chatbot.is_listening = True
             
-            # Start listening in a separate thread
-            import threading
-            listening_thread = threading.Thread(target=chatbot.listen_for_speech)
-            listening_thread.daemon = True
-            listening_thread.start()
+            # Listen for speech directly (blocking call)
+            text = chatbot.listen_for_speech()
             
-            return jsonify({
-                'status': 'success',
-                'message': 'Started listening',
-                'is_listening': True,
-                'timestamp': datetime.now().isoformat()
-            })
+            if text:
+                # Process with NLP engine
+                response = chatbot.process_nlp(text)
+                
+                return jsonify({
+                    'status': 'success',
+                    'text': text,
+                    'response': response,
+                    'is_listening': False,
+                    'timestamp': datetime.now().isoformat()
+                })
+            else:
+                return jsonify({
+                    'status': 'success',
+                    'message': 'No speech detected',
+                    'is_listening': False,
+                    'timestamp': datetime.now().isoformat()
+                })
             
         except Exception as e:
             logger.error(f"Error starting listening: {e}")
+            chatbot.is_listening = False
             return jsonify({'error': str(e)}), 500
     
     @app.route('/api/stop-listening', methods=['POST'])
