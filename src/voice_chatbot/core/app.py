@@ -180,15 +180,46 @@ class VoiceChatbot:
         try:
             logger.info(f"Processing audio file: {audio_file.filename}")
             
-            # Save uploaded file temporarily
+            # Save uploaded file temporarily with original extension
             import tempfile
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
+            import os
+            
+            # Get file extension from filename
+            file_ext = os.path.splitext(audio_file.filename)[1] if audio_file.filename else '.webm'
+            with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as tmp_file:
                 audio_file.save(tmp_file.name)
                 temp_audio_path = tmp_file.name
             
             try:
+                # Convert to WAV if needed using pydub
+                wav_path = temp_audio_path.replace(file_ext, '.wav')
+                
+                if file_ext.lower() != '.wav':
+                    # Try to convert using pydub
+                    try:
+                        from pydub import AudioSegment
+                        
+                        # Load audio file with pydub
+                        audio_segment = AudioSegment.from_file(temp_audio_path)
+                        
+                        # Convert to mono, 16kHz, 16-bit for speech recognition
+                        audio_segment = audio_segment.set_channels(1)
+                        audio_segment = audio_segment.set_frame_rate(16000)
+                        audio_segment = audio_segment.set_sample_width(2)  # 16-bit
+                        
+                        # Export as WAV
+                        audio_segment.export(wav_path, format="wav")
+                        logger.info(f"Converted audio to WAV using pydub: {wav_path}")
+                        
+                    except Exception as pydub_error:
+                        logger.warning(f"pydub conversion failed: {pydub_error}")
+                        # Fallback: try to process the original file
+                        wav_path = temp_audio_path
+                else:
+                    wav_path = temp_audio_path
+                
                 # Load audio file with speech_recognition
-                with sr.AudioFile(temp_audio_path) as source:
+                with sr.AudioFile(wav_path) as source:
                     audio = self.recognizer.record(source)
                 
                 logger.info("Processing audio file...")
@@ -197,8 +228,10 @@ class VoiceChatbot:
                 return text.lower()
                 
             finally:
-                # Clean up temporary file
-                import os
+                # Clean up temporary files
+                for path in [temp_audio_path, wav_path]:
+                    if path != temp_audio_path and os.path.exists(path):
+                        os.unlink(path)
                 if os.path.exists(temp_audio_path):
                     os.unlink(temp_audio_path)
             

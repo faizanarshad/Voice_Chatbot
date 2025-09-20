@@ -19,3 +19,4 @@ gTTS==2.5.4
 pygame==2.6.1
 pyobjc-framework-Cocoa
 pyobjc-framework-Quartz
+pydub==0.25.1

@@ -57,8 +57,21 @@ async function startVoiceListening() {
         // Request microphone access
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         
-        // Initialize MediaRecorder
-        mediaRecorder = new MediaRecorder(stream);
+        // Initialize MediaRecorder with proper audio format
+        const options = {
+            mimeType: 'audio/webm;codecs=opus',
+            audioBitsPerSecond: 128000
+        };
+        
+        // Fallback to default if webm is not supported
+        if (MediaRecorder.isTypeSupported(options.mimeType)) {
+            mediaRecorder = new MediaRecorder(stream, options);
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/mp4' });
+        } else {
+            mediaRecorder = new MediaRecorder(stream);
+        }
+        
         audioChunks = [];
         
         // Set up event handlers
@@ -170,10 +183,15 @@ function processAudioRecording() {
         return;
     }
     
-    // Create audio blob
-    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+    // Create audio blob with proper MIME type
+    const mimeType = mediaRecorder.mimeType || 'audio/webm';
+    const audioBlob = new Blob(audioChunks, { type: mimeType });
     const formData = new FormData();
-    formData.append('audio', audioBlob, 'recording.wav');
+    
+    // Use appropriate file extension based on MIME type
+    const fileExtension = mimeType.includes('webm') ? 'webm' : 
+                         mimeType.includes('mp4') ? 'mp4' : 'wav';
+    formData.append('audio', audioBlob, `recording.${fileExtension}`);
     
     // Send audio to server for processing
     fetch('/api/process-audio', {
