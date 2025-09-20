@@ -11,8 +11,8 @@ import tempfile
 from datetime import datetime
 import logging
 from dotenv import load_dotenv
-from config import Config
-from nlp_engine import NLPEngine
+from .config import Config
+from ..services.nlp_engine import NLPEngine
 
 # Import additional TTS libraries
 try:

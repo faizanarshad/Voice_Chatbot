@@ -43,13 +43,13 @@ AI Voice Assistant Pro is a sophisticated voice-controlled AI assistant that com
 
 3. **Configure Environment**
    ```bash
-   cp env_example.txt .env
+   cp config/development/env_example.txt .env
    # Edit .env with your API keys (optional)
    ```
 
 4. **Run the Application**
    ```bash
-   python app.py
+   python main.py
    ```
 
 5. **Access the Interface**

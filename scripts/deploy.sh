@@ -57,8 +57,8 @@ check_docker() {
 check_env() {
     if [ ! -f ".env" ]; then
         print_warning ".env file not found. Creating from template..."
-        if [ -f "env_example.txt" ]; then
-            cp env_example.txt .env
+        if [ -f "config/development/env_example.txt" ]; then
+            cp config/development/env_example.txt .env
             print_warning "Please edit .env file with your API keys before deploying"
             read -p "Press Enter to continue after editing .env file..."
         else
@@ -78,7 +78,7 @@ create_directories() {
 # Build Docker image
 build_image() {
     print_info "Building Docker image..."
-    docker-compose build --no-cache
+    docker-compose -f deployment/docker/docker-compose.yml build --no-cache
     print_status "Docker image built successfully"
 }
 
@@ -87,10 +87,10 @@ deploy_app() {
     print_info "Deploying application..."
     
     # Stop existing containers
-    docker-compose down 2>/dev/null || true
+    docker-compose -f deployment/docker/docker-compose.yml down 2>/dev/null || true
     
     # Start the application
-    docker-compose up -d
+    docker-compose -f deployment/docker/docker-compose.yml up -d
     
     print_status "Application deployed successfully"
 }
@@ -107,7 +107,7 @@ check_health() {
         print_status "Container is running"
     else
         print_error "Container failed to start"
-        docker-compose logs
+        docker-compose -f deployment/docker/docker-compose.yml logs
         exit 1
     fi
     
@@ -115,7 +115,7 @@ check_health() {
     if curl -f http://localhost:$PORT/api/status &>/dev/null; then
         print_status "Application is healthy and responding"
     else
-        print_warning "Application may still be starting up. Check logs with: docker-compose logs -f"
+        print_warning "Application may still be starting up. Check logs with: docker-compose -f deployment/docker/docker-compose.yml logs -f"
     fi
 }
 
@@ -130,17 +130,17 @@ show_info() {
     echo ""
     echo -e "${BLUE}🐳 Docker Commands:${NC}"
     echo "===================="
-    echo "View logs: docker-compose logs -f"
-    echo "Stop app:  docker-compose down"
-    echo "Restart:   docker-compose restart"
-    echo "Shell:     docker-compose exec voice-chatbot bash"
+    echo "View logs: docker-compose -f deployment/docker/docker-compose.yml logs -f"
+    echo "Stop app:  docker-compose -f deployment/docker/docker-compose.yml down"
+    echo "Restart:   docker-compose -f deployment/docker/docker-compose.yml restart"
+    echo "Shell:     docker-compose -f deployment/docker/docker-compose.yml exec voice-chatbot bash"
     echo ""
 }
 
 # Cleanup function
 cleanup() {
     print_info "Cleaning up..."
-    docker-compose down
+    docker-compose -f deployment/docker/docker-compose.yml down
     print_status "Cleanup completed"
 }
 
@@ -166,17 +166,17 @@ main() {
             show_info
             ;;
         "logs")
-            docker-compose logs -f
+            docker-compose -f deployment/docker/docker-compose.yml logs -f
             ;;
         "shell")
-            docker-compose exec voice-chatbot bash
+            docker-compose -f deployment/docker/docker-compose.yml exec voice-chatbot bash
             ;;
         "status")
-            docker-compose ps
+            docker-compose -f deployment/docker/docker-compose.yml ps
             ;;
         "clean")
             print_info "Removing all containers and images..."
-            docker-compose down -v --rmi all
+            docker-compose -f deployment/docker/docker-compose.yml down -v --rmi all
             print_status "Cleanup completed"
             ;;
         *)

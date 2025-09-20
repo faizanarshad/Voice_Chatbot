@@ -2,14 +2,14 @@ version: '3.8'
 
 services:
   voice-chatbot:
-    build: .
+    build: ../..
     container_name: ai-voice-assistant-pro
     ports:
       - "5001:5001"
     environment:
       # Flask Configuration
       - FLASK_ENV=production
-      - FLASK_APP=app.py
+      - FLASK_APP=main.py
       - SECRET_KEY=your-secret-key-here-change-in-production
       
       # LLM Configuration (set these in your .env file)

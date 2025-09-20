@@ -42,7 +42,7 @@ FROM python:3.10-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    FLASK_APP=app.py \
+    FLASK_APP=main.py \
     FLASK_ENV=production \
     FLASK_RUN_HOST=0.0.0.0 \
     FLASK_RUN_PORT=5001
@@ -88,4 +88,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5001/api/status || exit 1
 
 # Default command
-CMD ["python", "app.py"]
+CMD ["python", "main.py"]

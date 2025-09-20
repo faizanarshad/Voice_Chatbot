@@ -1,0 +1,32 @@
+# Include package data
+include README.md
+include LICENSE
+include requirements.txt
+include setup.py
+
+# Include configuration files
+recursive-include config *
+recursive-include deployment *
+
+# Include web assets
+recursive-include web/static *
+recursive-include web/templates *
+
+# Include documentation
+recursive-include docs *
+
+# Include scripts
+recursive-include scripts *
+
+# Include test files
+recursive-include tests *
+
+# Exclude unnecessary files
+exclude *.pyc
+exclude *.pyo
+exclude .DS_Store
+exclude .git*
+exclude *.log
+exclude __pycache__/*
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
