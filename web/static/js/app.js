@@ -103,40 +103,47 @@ async function startVoiceListening() {
         // Start recording
         mediaRecorder.start();
         
-    // Make API call to start listening
-    fetch('/api/start-listening', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('Started listening:', data);
-        
-        // If we got text and response, process it
-        if (data.text && data.response) {
-            // Stop the recording UI
-            stopVoiceListening();
+        // Make API call to start listening (this will handle the speech recognition)
+        fetch('/api/start-listening', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Voice processing result:', data);
             
-            // Add messages to conversation
-            addMessage('user', data.text);
-            addMessage('bot', data.response);
-            
-            // Update status
-            voiceStatus.textContent = 'Ready for next command';
-            updateStatus('ready', 'Ready');
-        } else if (data.message) {
-            // Handle no speech detected
+            // If we got text and response, process it
+            if (data.text && data.response) {
+                // Stop the recording UI
+                stopVoiceListening();
+                
+                // Add messages to conversation
+                addMessage('user', data.text);
+                addMessage('bot', data.response);
+                
+                // Update status
+                voiceStatus.textContent = 'Ready for next command';
+                updateStatus('ready', 'Ready');
+            } else if (data.message) {
+                // Handle no speech detected
+                stopVoiceListening();
+                voiceStatus.textContent = data.message;
+                updateStatus('ready', 'Ready');
+            } else {
+                // Handle error case
+                stopVoiceListening();
+                voiceStatus.textContent = 'Error processing speech';
+                updateStatus('ready', 'Ready');
+            }
+        })
+        .catch(error => {
+            console.error('Error starting listening:', error);
             stopVoiceListening();
-            voiceStatus.textContent = data.message;
+            voiceStatus.textContent = 'Error processing speech';
             updateStatus('ready', 'Ready');
-        }
-    })
-    .catch(error => {
-        console.error('Error starting listening:', error);
-        stopVoiceListening();
-    });
+        });
         
     } catch (error) {
         console.error('Error accessing microphone:', error);
@@ -184,10 +191,10 @@ function stopVoiceListening() {
     .then(response => response.json())
     .then(data => {
         console.log('Stopped listening:', data);
-        // The microphone recording should have already processed the speech
-        // If we get here, the audio file processing will handle the response
-        voiceStatus.textContent = 'Processing your speech...';
-        updateStatus('processing', 'Processing...');
+        // The response should already be handled by the start-listening endpoint
+        // Just update the status
+        voiceStatus.textContent = 'Ready for next command';
+        updateStatus('ready', 'Ready');
     })
     .catch(error => {
         console.error('Error stopping listening:', error);

@@ -149,19 +149,28 @@ class VoiceChatbot:
         """Listen for speech input and convert to text"""
         try:
             speech_config = Config.get_speech_config()
-            with self.microphone as source:
-                logger.info("Listening...")
-                audio = self.recognizer.listen(
-                    source, 
-                    timeout=speech_config['timeout'], 
-                    phrase_time_limit=speech_config['phrase_time_limit']
-                )
-                
-            logger.info("Processing speech...")
-            text = self.recognizer.recognize_google(audio)
-            logger.info(f"Recognized: {text}")
-            return text.lower()
             
+            # Create a new microphone instance to avoid context manager conflicts
+            microphone = sr.Microphone()
+            
+            try:
+                with microphone as source:
+                    logger.info("Listening...")
+                    audio = self.recognizer.listen(
+                        source, 
+                        timeout=speech_config['timeout'], 
+                        phrase_time_limit=speech_config['phrase_time_limit']
+                    )
+                    
+                logger.info("Processing speech...")
+                text = self.recognizer.recognize_google(audio)
+                logger.info(f"Recognized: {text}")
+                return text.lower()
+                
+            except Exception as mic_error:
+                logger.error(f"Microphone error: {mic_error}")
+                return None
+                
         except sr.WaitTimeoutError:
             logger.info("No speech detected within timeout")
             return None
