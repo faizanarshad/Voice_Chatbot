@@ -56,6 +56,27 @@ AI Voice Assistant Pro is a sophisticated voice-controlled AI assistant that com
    - Open your browser to `http://localhost:5001`
    - Start using voice commands or type your requests
 
+## 🐳 Docker Deployment (Recommended)
+
+For production deployment or consistent environments, use Docker:
+
+```bash
+# Quick Docker deployment
+git clone https://github.com/yourusername/Voice_Chatbot.git
+cd Voice_Chatbot
+chmod +x deploy.sh
+./deploy.sh deploy
+```
+
+**Docker Features:**
+- 🐳 **Containerized**: Consistent deployment across environments
+- 🔄 **Auto-restart**: Automatic recovery from failures
+- 📊 **Health checks**: Built-in monitoring
+- 🌐 **Nginx proxy**: Production-ready reverse proxy
+- 📈 **Scalable**: Easy horizontal scaling
+
+📖 **[Complete Docker Guide](DOCKER_DEPLOYMENT.md)**
+
 ## 🔧 Configuration
 
 ### Environment Variables
