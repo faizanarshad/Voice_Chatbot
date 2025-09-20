@@ -7,11 +7,27 @@ import os
 import threading
 import queue
 import time
+import tempfile
 from datetime import datetime
 import logging
 from dotenv import load_dotenv
 from config import Config
 from nlp_engine import NLPEngine
+
+# Import additional TTS libraries
+try:
+    from gtts import gTTS
+    import pygame
+    GTTS_AVAILABLE = True
+    pygame.mixer.init()
+except ImportError:
+    GTTS_AVAILABLE = False
+
+try:
+    import pyobjc
+    PYTTSX3_AVAILABLE = True
+except ImportError:
+    PYTTSX3_AVAILABLE = False
 
 # Load environment variables
 load_dotenv()
@@ -40,15 +56,31 @@ class VoiceChatbot:
         self.recognizer = sr.Recognizer()
         self.microphone = sr.Microphone()
         
-        # Initialize TTS engine with error handling
-        try:
-            self.engine = pyttsx3.init()
-            self.tts_available = True
-            logger.info("TTS engine initialized successfully")
-        except Exception as e:
-            logger.warning(f"TTS engine initialization failed: {e}")
-            self.engine = None
-            self.tts_available = False
+        # Initialize TTS engines with multiple fallback options
+        self.tts_methods = []
+        
+        # Method 1: Try pyttsx3 with proper macOS support
+        if PYTTSX3_AVAILABLE:
+            try:
+                self.engine = pyttsx3.init()
+                self.tts_methods.append('pyttsx3')
+                logger.info("✅ pyttsx3 TTS engine initialized successfully")
+            except Exception as e:
+                logger.warning(f"⚠️ pyttsx3 TTS engine initialization failed: {e}")
+                self.engine = None
+        
+        # Method 2: Google Text-to-Speech (always available)
+        if GTTS_AVAILABLE:
+            self.tts_methods.append('gtts')
+            logger.info("✅ Google TTS (gTTS) available")
+        
+        # Method 3: macOS system 'say' command (always available on macOS)
+        self.tts_methods.append('say')
+        logger.info("✅ macOS system 'say' command available")
+        
+        # Set primary TTS method
+        self.primary_tts = self.tts_methods[0] if self.tts_methods else 'say'
+        logger.info(f"🎯 Primary TTS method: {self.primary_tts}")
         
         self.audio_queue = queue.Queue()
         self.is_listening = False
@@ -56,8 +88,8 @@ class VoiceChatbot:
         # Initialize NLP engine
         self.nlp_engine = NLPEngine()
         
-        # Configure text-to-speech engine
-        if self.tts_available:
+        # Configure text-to-speech engine (only for pyttsx3)
+        if 'pyttsx3' in self.tts_methods and self.engine:
             tts_config = Config.get_tts_config()
             self.engine.setProperty('rate', tts_config['rate'])
             self.engine.setProperty('volume', tts_config['volume'])
@@ -144,35 +176,66 @@ class VoiceChatbot:
             return None
     
     def speak(self, text):
-        """Convert text to speech with improved clarity"""
-        try:
-            logger.info(f"Speaking: {text}")
-            
-            # Clean up text for better pronunciation
-            cleaned_text = text.replace(':', ' ').replace('-', ' ').replace('(', ' ').replace(')', ' ')
-            
-            if self.tts_available and self.engine:
-                # Use pyttsx3 if available
-                self.engine.say(cleaned_text)
-                self.engine.runAndWait()
-                logger.info("Speech completed successfully")
-            else:
-                # Fallback to system 'say' command on macOS
-                logger.info("Using fallback TTS (system 'say' command)...")
-                import subprocess
-                subprocess.run(['say', cleaned_text], check=True)
-                logger.info("Fallback TTS completed")
-                
-        except Exception as e:
-            logger.error(f"Error in text-to-speech: {e}")
-            # Try a fallback approach
+        """Convert text to speech using multiple TTS methods with fallbacks"""
+        logger.info(f"🗣️ Speaking: {text}")
+        
+        # Clean up text for better pronunciation
+        cleaned_text = text.replace(':', ' ').replace('-', ' ').replace('(', ' ').replace(')', ' ')
+        
+        # Try each TTS method in order of preference
+        for method in self.tts_methods:
             try:
-                logger.info("Trying fallback TTS...")
-                import subprocess
-                subprocess.run(['say', cleaned_text], check=True)
-                logger.info("Fallback TTS completed")
-            except Exception as fallback_error:
-                logger.error(f"Fallback TTS also failed: {fallback_error}")
+                if method == 'pyttsx3' and self.engine:
+                    logger.info("🎯 Using pyttsx3 TTS...")
+                    self.engine.say(cleaned_text)
+                    self.engine.runAndWait()
+                    logger.info("✅ pyttsx3 TTS completed successfully")
+                    return
+                    
+                elif method == 'gtts' and GTTS_AVAILABLE:
+                    logger.info("🌐 Using Google TTS (gTTS)...")
+                    self._speak_with_gtts(cleaned_text)
+                    logger.info("✅ Google TTS completed successfully")
+                    return
+                    
+                elif method == 'say':
+                    logger.info("🍎 Using macOS system 'say' command...")
+                    import subprocess
+                    subprocess.run(['say', cleaned_text], check=True, timeout=30)
+                    logger.info("✅ macOS 'say' command completed successfully")
+                    return
+                    
+            except Exception as e:
+                logger.warning(f"⚠️ TTS method '{method}' failed: {e}")
+                continue
+        
+        logger.error("❌ All TTS methods failed!")
+    
+    def _speak_with_gtts(self, text):
+        """Use Google Text-to-Speech with pygame for audio playback"""
+        try:
+            # Create temporary file for audio
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
+                temp_audio_file = tmp_file.name
+            
+            # Generate speech with gTTS
+            tts = gTTS(text=text, lang='en', slow=False)
+            tts.save(temp_audio_file)
+            
+            # Play audio with pygame
+            pygame.mixer.music.load(temp_audio_file)
+            pygame.mixer.music.play()
+            
+            # Wait for playback to complete
+            while pygame.mixer.music.get_busy():
+                time.sleep(0.1)
+            
+            # Clean up temporary file
+            os.unlink(temp_audio_file)
+            
+        except Exception as e:
+            logger.error(f"gTTS error: {e}")
+            raise
     
     def process_nlp(self, user_input, user_id='default'):
         """Process natural language input and generate response using advanced NLP"""
@@ -320,6 +383,8 @@ def get_status():
             'active_llm': active_llm,
             'llm_status': llm_status,
             'conversation_history_length': len(chatbot.nlp_engine.llm.conversation_history) if llm_enabled else 0,
+            'tts_methods': chatbot.tts_methods,
+            'primary_tts': chatbot.primary_tts,
             'system_ready': True
         })
     except Exception as e:
