@@ -185,6 +185,13 @@ def register_routes(app, chatbot):
                 # Process with NLP engine
                 response = chatbot.process_nlp(text)
                 
+                # Speak the response aloud
+                try:
+                    chatbot.speak(response)
+                    logger.info(f"🗣️ Spoke response: {response[:50]}...")
+                except Exception as tts_error:
+                    logger.error(f"TTS Error: {tts_error}")
+                
                 return jsonify({
                     'status': 'success',
                     'text': text,
