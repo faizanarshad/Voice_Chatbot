@@ -69,14 +69,14 @@ class VoiceChatbot:
                 logger.warning(f"⚠️ pyttsx3 TTS engine initialization failed: {e}")
                 self.engine = None
         
-        # Method 2: Google Text-to-Speech (always available)
+        # Method 2: macOS system 'say' command (always available on macOS - most reliable)
+        self.tts_methods.append('say')
+        logger.info("✅ macOS system 'say' command available")
+        
+        # Method 3: Google Text-to-Speech (fallback option)
         if GTTS_AVAILABLE:
             self.tts_methods.append('gtts')
             logger.info("✅ Google TTS (gTTS) available")
-        
-        # Method 3: macOS system 'say' command (always available on macOS)
-        self.tts_methods.append('say')
-        logger.info("✅ macOS system 'say' command available")
         
         # Set primary TTS method
         self.primary_tts = self.tts_methods[0] if self.tts_methods else 'say'
@@ -209,7 +209,9 @@ class VoiceChatbot:
     
     def speak(self, text):
         """Convert text to speech using multiple TTS methods with fallbacks"""
-        logger.info(f"🗣️ Speaking: {text}")
+        logger.info(f"🗣️ Speaking: {text[:100]}...")
+        logger.info(f"🎯 Available TTS methods: {self.tts_methods}")
+        logger.info(f"🎯 Primary TTS method: {self.primary_tts}")
         
         # Clean up text for better pronunciation
         cleaned_text = text.replace(':', ' ').replace('-', ' ').replace('(', ' ').replace(')', ' ')
@@ -217,6 +219,8 @@ class VoiceChatbot:
         # Try each TTS method in order of preference
         for method in self.tts_methods:
             try:
+                logger.info(f"🔄 Attempting TTS method: {method}")
+                
                 if method == 'pyttsx3' and self.engine:
                     logger.info("🎯 Using pyttsx3 TTS...")
                     self.engine.say(cleaned_text)
@@ -233,8 +237,15 @@ class VoiceChatbot:
                 elif method == 'say':
                     logger.info("🍎 Using macOS system 'say' command...")
                     import subprocess
-                    subprocess.run(['say', cleaned_text], check=True, timeout=30)
-                    logger.info("✅ macOS 'say' command completed successfully")
+                    
+                    # Truncate text if too long for say command
+                    if len(cleaned_text) > 200:
+                        truncated_text = cleaned_text[:200] + "..."
+                        logger.info(f"🍎 Text truncated from {len(cleaned_text)} to {len(truncated_text)} characters")
+                        cleaned_text = truncated_text
+                    
+                    result = subprocess.run(['say', cleaned_text], check=True, timeout=60, capture_output=True, text=True)
+                    logger.info(f"✅ macOS 'say' command completed successfully (return code: {result.returncode})")
                     return
                     
             except Exception as e:
