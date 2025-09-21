@@ -316,30 +316,7 @@ def index():
     """Serve the main HTML page"""
     return render_template('index.html')
 
-@app.route('/api/start-listening', methods=['POST'])
-def start_listening():
-    """Start listening for speech input"""
-    try:
-        if not chatbot.is_listening:
-            thread = threading.Thread(target=chatbot.start_listening)
-            thread.daemon = True
-            thread.start()
-            return jsonify({'status': 'success', 'message': 'Started listening'})
-        else:
-            return jsonify({'status': 'error', 'message': 'Already listening'})
-    except Exception as e:
-        logger.error(f"Error starting listening: {e}")
-        return jsonify({'status': 'error', 'message': str(e)})
-
-@app.route('/api/stop-listening', methods=['POST'])
-def stop_listening():
-    """Stop listening for speech input"""
-    try:
-        chatbot.stop_listening()
-        return jsonify({'status': 'success', 'message': 'Stopped listening'})
-    except Exception as e:
-        logger.error(f"Error stopping listening: {e}")
-        return jsonify({'status': 'error', 'message': str(e)})
+# Routes moved to src/voice_chatbot/api/routes.py
 
 @app.route('/api/process-text', methods=['POST'])
 def process_text():

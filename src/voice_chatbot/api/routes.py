@@ -169,7 +169,12 @@ def register_routes(app, chatbot):
         """Start voice listening session and return recognized text"""
         try:
             if chatbot.is_listening:
-                return jsonify({'message': 'Already listening'}), 200
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Already listening',
+                    'is_listening': True,
+                    'timestamp': datetime.now().isoformat()
+                })
             
             chatbot.is_listening = True
             
