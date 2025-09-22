@@ -105,8 +105,11 @@ Remember: You're not just answering questions - you're having a meaningful conve
         
         messages.append({'role': 'user', 'content': user_input})
         
+        # Allow selecting the OpenAI model via environment variable; default to a modern, capable model
+        openai_model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+
         data = {
-            'model': 'gpt-3.5-turbo',
+            'model': openai_model,
             'messages': messages,
             'max_tokens': 500,  # Increased for more detailed responses
             'temperature': 0.8,  # Slightly higher for more creative responses

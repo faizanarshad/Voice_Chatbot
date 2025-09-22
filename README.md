@@ -10,14 +10,14 @@
 
 ## 🌟 Overview
 
-AI Voice Assistant Pro is a sophisticated voice-controlled AI assistant that combines advanced Natural Language Processing (NLP), Large Language Model (LLM) integration, and a modern web interface. Built with Flask, it offers both voice and text interaction capabilities with intelligent responses powered by OpenAI GPT-3.5-turbo.
+AI Voice Assistant Pro is a sophisticated voice-controlled AI assistant that combines advanced Natural Language Processing (NLP), Large Language Model (LLM) integration, and a modern web interface. Built with Flask, it offers both voice and text interaction capabilities with intelligent responses powered by OpenAI (configurable model via `OPENAI_MODEL`, defaults to `gpt-4o-mini`).
 
 ## ✨ Key Features
 
 - 🎤 **Voice Recognition**: High-accuracy speech-to-text conversion
 - 🗣️ **Text-to-Speech**: Natural voice responses with customizable settings
 - 🧠 **Advanced NLP**: Intelligent intent recognition and context management
-- 🤖 **LLM Integration**: OpenAI GPT-3.5-turbo, Anthropic Claude, and Ollama support
+- 🤖 **LLM Integration**: OpenAI (model configurable), Anthropic Claude, and Ollama support
 - 🎨 **Modern UI**: Glassmorphism design with responsive layout
 - 📱 **Cross-Platform**: Works on desktop, tablet, and mobile devices
 
@@ -102,6 +102,8 @@ To enable advanced AI capabilities:
    USE_LLM=true
    ACTIVE_LLM=openai
    OPENAI_API_KEY=sk-your-key-here
+   # Optional: choose latest model
+   OPENAI_MODEL=gpt-4o-mini
    ```
 
 2. **Anthropic Claude**
@@ -183,7 +185,7 @@ Voice_Chatbot/
 ## 🧠 Advanced Capabilities
 
 ### With LLM Integration
-- **Intelligent Responses**: Context-aware, detailed answers
+- **Intelligent Responses**: Context-aware, detailed answers (latest OpenAI model supported)
 - **Creative Writing**: Stories, poems, explanations
 - **Problem Solving**: Complex analysis and solutions
 - **Multi-domain Knowledge**: Science, technology, business, arts
@@ -302,7 +304,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **OpenAI**: For GPT-3.5-turbo API
+- **OpenAI**: For Chat Completions API
 - **Google**: For Speech Recognition API
 - **Flask Community**: For the excellent web framework
 - **Open Source Contributors**: For various Python packages
