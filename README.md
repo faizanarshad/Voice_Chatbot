@@ -104,6 +104,11 @@ To enable advanced AI capabilities:
    OPENAI_API_KEY=sk-your-key-here
    # Optional: choose latest model
    OPENAI_MODEL=gpt-4o-mini
+
+   # Other supported examples
+   # OPENAI_MODEL=gpt-4o
+   # OPENAI_MODEL=gpt-4-turbo
+   # OPENAI_MODEL=gpt-3.5-turbo
    ```
 
 2. **Anthropic Claude**
