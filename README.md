@@ -21,6 +21,68 @@ AI Voice Assistant Pro is a sophisticated voice-controlled AI assistant that com
 - 🎨 **Modern UI**: Glassmorphism design with responsive layout
 - 📱 **Cross-Platform**: Works on desktop, tablet, and mobile devices
 
+## ✅ Available Features
+
+Below is a quick capabilities matrix. Configure via `.env` and use the listed endpoints.
+
+| Feature | Status | Engine/Model | Config | Endpoint |
+|---|---|---|---|---|
+| Speech-to-Text (STT) | ✅ | SpeechRecognition (Mic) | — | `/api/start-listening`, `/api/stop-listening` |
+| Text-to-Speech (TTS) | ✅ | macOS `say` → gTTS fallback | `TTS_RATE`, `TTS_VOLUME` | `/api/speak` |
+| LLM Responses | ✅ | OpenAI (configurable) | `USE_LLM`, `OPENAI_MODEL`, `OPENAI_API_KEY` | `/api/process-text` |
+| Health/Status | ✅ | — | — | `/api/status` |
+
+### Category overview
+- **Voice**: STT via microphone; TTS with macOS `say` primary and gTTS fallback.
+- **Intelligence**: OpenAI chat completions with conversation context; model controlled by `OPENAI_MODEL` (defaults to `gpt-4o-mini`).
+- **Tools**: Built-in intents (weather, time, jokes, calculations, news stubs).
+- **Web UI**: Mic button, chat feed, status polling; logs and error surfacing.
+- **Ops**: Dockerized deployment, Nginx proxy, health checks, structured logs.
+
+### Quick usage examples
+```bash
+# Process a text prompt (LLM)
+curl -X POST http://localhost:5001/api/process-text \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"Explain RAG in one paragraph"}'
+
+# Speak text (TTS)
+curl -X POST http://localhost:5001/api/speak \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"Hello from the assistant"}'
+
+# Status
+curl http://localhost:5001/api/status
+```
+
+### Configuration hints
+```bash
+# LLM
+USE_LLM=true
+ACTIVE_LLM=openai
+OPENAI_API_KEY=sk-...
+# Choose model (examples)
+OPENAI_MODEL=gpt-4o-mini   # default
+# OPENAI_MODEL=gpt-4o
+# OPENAI_MODEL=gpt-4-turbo
+# OPENAI_MODEL=gpt-3.5-turbo
+
+# TTS
+TTS_RATE=150
+TTS_VOLUME=1.0
+```
+
+### Troubleshooting (by feature)
+- **STT (mic)**: Ensure browser mic permissions are granted; close other apps using the mic.
+- **TTS (macOS say)**: Very long texts may be truncated intentionally to avoid timeouts.
+- **LLM**: Verify `.env` keys; confirm `OPENAI_MODEL` and network access.
+
+### Roadmap (next upgrades)
+- Streaming responses with barge‑in (interrupt TTS while speaking)
+- Wake word + voice activity detection (always‑listening mode)
+- Whisper/faster‑whisper STT and neural TTS (Edge/Polly/ElevenLabs)
+- Memory + RAG with vector DB, multilingual support, analytics dashboard
+
 ## 🚀 Quick Start
 
 ### Prerequisites
