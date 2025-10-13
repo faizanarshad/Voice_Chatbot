@@ -1055,9 +1055,11 @@ Just ask me anything! I'm here to help make your day better and more productive.
                 r'\b(what is|who is|where is|how to|definition)\b'
             ],
             'advanced_question': [
-                r'\b(explain|describe|how does|what is the|tell me about)\b',
-                r'\b(quantum|artificial intelligence|machine learning|blockchain)\b',
-                r'\b(philosophy|science|technology|economics|medicine)\b'
+                r'\b(explain|describe|how does|what is|tell me|difference|differences|compare|comparison)\b',
+                r'\b(quantum|artificial intelligence|machine learning|deep learning|neural network|blockchain)\b',
+                r'\b(philosophy|science|technology|economics|medicine)\b',
+                r'\b(AI|ML|DL)\b.*\b(deep learning|machine learning|artificial intelligence|difference|compare)\b',
+                r'\b(difference|differences)\b.*\b(between|among)\b.*\b(AI|ML|deep learning|machine learning|artificial intelligence)\b'
             ],
             'reminder': [
                 r'\b(remind|reminder|alarm|schedule|appointment|meeting)\b',
@@ -1154,9 +1156,9 @@ Just ask me anything! I'm here to help make your day better and more productive.
                     if intent in ['calculation', 'weather', 'news', 'time', 'joke', 'music_control', 'calendar', 'notes', 'tasks']:
                         score += 20
                     
-                    # Boost advanced question intent
+                    # Boost advanced question intent (highest priority for technical questions)
                     if intent == 'advanced_question':
-                        score += 25
+                        score += 50
                     
                     # Boost creative intent
                     if intent == 'creative':
