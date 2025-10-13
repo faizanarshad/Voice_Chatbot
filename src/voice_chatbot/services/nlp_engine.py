@@ -111,8 +111,8 @@ Remember: You're not just answering questions - you're having a meaningful conve
         data = {
             'model': openai_model,
             'messages': messages,
-            'max_tokens': 500,  # Increased for more detailed responses
-            'temperature': 0.8,  # Slightly higher for more creative responses
+            'max_tokens': 600,  # Increased for complete answers
+            'temperature': 0.7,  # Balanced for speed and quality
             'top_p': 0.9,
             'frequency_penalty': 0.1,
             'presence_penalty': 0.1
@@ -122,7 +122,7 @@ Remember: You're not just answering questions - you're having a meaningful conve
             'https://api.openai.com/v1/chat/completions',
             headers=headers,
             json=data,
-            timeout=15
+            timeout=10
         )
         
         if response.status_code == 200:
