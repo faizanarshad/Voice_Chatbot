@@ -11,7 +11,7 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here')
     DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
     HOST = os.getenv('HOST', '0.0.0.0')
-    PORT = int(os.getenv('PORT', 5001))
+    PORT = int(os.getenv('PORT', 5002))  # 5001 often used by macOS AirPlay
     
     # Speech Recognition settings
     SPEECH_RECOGNITION_TIMEOUT = int(os.getenv('SPEECH_RECOGNITION_TIMEOUT', 5))

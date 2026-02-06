@@ -4,7 +4,7 @@
 # Flask Configuration
 SECRET_KEY=your-secret-key-here
 DEBUG=True
-PORT=5001
+PORT=5002
 
 # Text-to-Speech Settings
 TTS_RATE=150
@@ -17,7 +17,7 @@ ACTIVE_LLM=openai
 
 # OpenAI Configuration
 OPENAI_API_KEY=your-openai-api-key-here
-OPENAI_MODEL=gpt-4o-mini
+OPENAI_MODEL=gpt-4.1
 
 # Anthropic Configuration
 ANTHROPIC_API_KEY=your-anthropic-api-key-here

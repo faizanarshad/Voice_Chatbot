@@ -109,7 +109,8 @@ Remember: You're not just answering questions - you're having a meaningful conve
         messages.append({'role': 'user', 'content': user_input})
         
         # Allow selecting the OpenAI model via environment variable; default to a modern, capable model
-        openai_model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+        # Use a current multimodal model by default.
+        openai_model = os.getenv('OPENAI_MODEL', 'gpt-4.1')
 
         data = {
             'model': openai_model,
@@ -372,7 +373,10 @@ Remember: You're not just answering questions - you're having a meaningful conve
                 "Content-Type": "application/json",
             }
 
+            # Vision: use gpt-4o (proven with Chat Completions). gpt-3.5-turbo has no vision.
             model = os.getenv("OPENAI_MODEL", "gpt-4o")
+            if "gpt-3.5" in model:
+                model = "gpt-4o"
 
             data = {
                 "model": model,
@@ -381,7 +385,7 @@ Remember: You're not just answering questions - you're having a meaningful conve
                         "role": "user",
                         "content": [
                             {"type": "text", "text": prompt},
-                            {"type": "image_url", "image_url": {"url": image_url}},
+                            {"type": "image_url", "image_url": {"url": image_url, "detail": "low"}},
                         ],
                     }
                 ],
@@ -392,17 +396,33 @@ Remember: You're not just answering questions - you're having a meaningful conve
                 "https://api.openai.com/v1/chat/completions",
                 headers=headers,
                 json=data,
-                timeout=30,
+                timeout=60,
             )
 
             if response.status_code == 200:
                 result = response.json()
                 return result["choices"][0]["message"]["content"].strip()
 
-            logger.error(
-                f"OpenAI vision API error: {response.status_code} - {response.text}"
-            )
-            return "I couldn't analyze the image due to an API error."
+            err_body = response.text
+            try:
+                err_json = response.json()
+                err_msg = err_json.get("error", {}).get("message", err_body)
+                err_code = err_json.get("error", {}).get("code", str(response.status_code))
+            except Exception:
+                err_msg = err_body[:200] if err_body else "Unknown error"
+                err_code = str(response.status_code)
+
+            logger.error(f"OpenAI vision API error: {response.status_code} - {err_body}")
+
+            if response.status_code == 401:
+                return "Image analysis failed: Invalid or missing API key. Check OPENAI_API_KEY in .env"
+            if response.status_code == 404:
+                return f"Image analysis failed: Model not found ({model}). Try OPENAI_MODEL=gpt-4o"
+            if response.status_code == 429:
+                return "Image analysis failed: Rate limit exceeded. Wait a moment and try again."
+            if response.status_code == 400:
+                return f"Image analysis failed: Bad request. {err_msg}"
+            return f"Image analysis failed: {err_code} - {err_msg}"
         except Exception as e:
             logger.error(f"Error during image analysis: {e}")
             return "I ran into an error while analyzing the image."

@@ -10,7 +10,7 @@
 
 ## 🌟 Overview
 
-AI Voice Assistant Pro is a sophisticated voice-controlled AI assistant that combines advanced Natural Language Processing (NLP), Large Language Model (LLM) integration, and a modern web interface. Built with Flask, it offers both voice and text interaction capabilities with intelligent responses powered by OpenAI (configurable model via `OPENAI_MODEL`, defaults to `gpt-4o-mini`).
+AI Voice Assistant Pro is a sophisticated voice-controlled AI assistant that combines advanced Natural Language Processing (NLP), Large Language Model (LLM) integration, and **computer vision** for image analysis. Built with Flask, it offers voice, text, and image interaction with intelligent responses powered by OpenAI (configurable via `OPENAI_MODEL`; use `gpt-4o` for vision).
 
 ## ✨ Key Features
 
@@ -18,6 +18,7 @@ AI Voice Assistant Pro is a sophisticated voice-controlled AI assistant that com
 - 🗣️ **Text-to-Speech**: Natural voice responses with customizable settings
 - 🧠 **Advanced NLP**: Intelligent intent recognition and context management
 - 🤖 **LLM Integration**: OpenAI (model configurable), Anthropic Claude, and Ollama support
+- 📷 **Computer Vision**: Upload images and get AI-powered analysis via OpenAI vision (gpt-4o)
 - 🎨 **Modern UI**: Glassmorphism design with responsive layout
 - 📱 **Cross-Platform**: Works on desktop, tablet, and mobile devices
 
@@ -30,42 +31,48 @@ Below is a quick capabilities matrix. Configure via `.env` and use the listed en
 | Speech-to-Text (STT) | ✅ | SpeechRecognition (Mic) | — | `/api/start-listening`, `/api/stop-listening` |
 | Text-to-Speech (TTS) | ✅ | macOS `say` → gTTS fallback | `TTS_RATE`, `TTS_VOLUME` | `/api/speak` |
 | LLM Responses | ✅ | OpenAI (configurable) | `USE_LLM`, `OPENAI_MODEL`, `OPENAI_API_KEY` | `/api/process-text` |
+| Image Analysis (Vision) | ✅ | OpenAI gpt-4o | `USE_LLM`, `ACTIVE_LLM=openai`, `OPENAI_API_KEY` | `POST /api/analyze-image` |
 | Health/Status | ✅ | — | — | `/api/status` |
 
 ### Category overview
 - **Voice**: STT via microphone; TTS with macOS `say` primary and gTTS fallback.
-- **Intelligence**: OpenAI chat completions with conversation context; model controlled by `OPENAI_MODEL` (defaults to `gpt-4o-mini`).
+- **Intelligence**: OpenAI chat completions with conversation context; model controlled by `OPENAI_MODEL` (gpt-4o for vision).
+- **Computer Vision**: Upload images in the web UI or via API; analyze with custom prompts.
 - **Tools**: Built-in intents (weather, time, jokes, calculations, news stubs).
-- **Web UI**: Mic button, chat feed, status polling; logs and error surfacing.
-- **Ops**: Dockerized deployment, Nginx proxy, health checks, structured logs.
+- **Web UI**: Mic button, chat feed, image upload, status polling; logs and error surfacing.
+- **Ops**: Dockerized deployment, Nginx proxy, health checks, structured logs. Default port **5002** (avoids macOS AirPlay on 5001).
 
 ### Quick usage examples
 ```bash
 # Process a text prompt (LLM)
-curl -X POST http://localhost:5001/api/process-text \
+curl -X POST http://localhost:5002/api/process-text \
   -H 'Content-Type: application/json' \
   -d '{"text":"Explain RAG in one paragraph"}'
 
 # Speak text (TTS)
-curl -X POST http://localhost:5001/api/speak \
+curl -X POST http://localhost:5002/api/speak \
   -H 'Content-Type: application/json' \
   -d '{"text":"Hello from the assistant"}'
 
+# Analyze image (Computer Vision)
+curl -X POST http://localhost:5002/api/analyze-image \
+  -F "image=@/path/to/image.jpg" \
+  -F "prompt=Describe this image"
+
 # Status
-curl http://localhost:5001/api/status
+curl http://localhost:5002/api/status
 ```
 
 ### Configuration hints
 ```bash
+# Core (port 5002 avoids macOS AirPlay conflict on 5001)
+PORT=5002
+
 # LLM
 USE_LLM=true
 ACTIVE_LLM=openai
 OPENAI_API_KEY=sk-...
-# Choose model (examples)
-OPENAI_MODEL=gpt-4o-mini   # default
-# OPENAI_MODEL=gpt-4o
-# OPENAI_MODEL=gpt-4-turbo
-# OPENAI_MODEL=gpt-3.5-turbo
+OPENAI_MODEL=gpt-4o        # default; use for vision/image analysis
 
 # TTS
 TTS_RATE=150
@@ -76,12 +83,15 @@ TTS_VOLUME=1.0
 - **STT (mic)**: Ensure browser mic permissions are granted; close other apps using the mic.
 - **TTS (macOS say)**: Very long texts may be truncated intentionally to avoid timeouts.
 - **LLM**: Verify `.env` keys; confirm `OPENAI_MODEL` and network access.
+- **Image Analysis**: Requires `USE_LLM=true`, `ACTIVE_LLM=openai`, valid `OPENAI_API_KEY`, and `OPENAI_MODEL=gpt-4o` (or vision-capable model).
+- **Port in use**: Set `PORT=5002` in `.env` if 5001 is taken (e.g. by macOS AirPlay).
 
 ### Roadmap (next upgrades)
 - Streaming responses with barge‑in (interrupt TTS while speaking)
 - Wake word + voice activity detection (always‑listening mode)
 - Whisper/faster‑whisper STT and neural TTS (Edge/Polly/ElevenLabs)
 - Memory + RAG with vector DB, multilingual support, analytics dashboard
+- *(Done)* Computer vision image analysis via OpenAI gpt-4o
 
 ## 🚀 Quick Start
 
@@ -99,8 +109,10 @@ TTS_VOLUME=1.0
    cd Voice_Chatbot
    ```
 
-2. **Install Dependencies**
+2. **Create Virtual Environment & Install Dependencies**
    ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate   # On Windows: .venv\Scripts\activate
    pip install -r requirements.txt
    ```
 
@@ -116,8 +128,8 @@ TTS_VOLUME=1.0
    ```
 
 5. **Access the Interface**
-   - Open your browser to `http://localhost:5001`
-   - Start using voice commands or type your requests
+   - Open your browser to `http://localhost:5002` (default port; configurable via `PORT` in `.env`)
+   - Start using voice commands, text chat, or upload images for AI analysis
 
 ## 🐳 Docker Deployment (Recommended)
 
@@ -144,19 +156,20 @@ chmod +x deploy.sh
 
 ### Environment Variables
 ```bash
-# Core Settings
-PORT=5001
+# Core Settings (PORT=5002 avoids macOS AirPlay on 5001)
+PORT=5002
 TTS_RATE=150
 TTS_VOLUME=1.0
 
-# LLM Integration (Optional)
+# LLM Integration (Required for image analysis)
 USE_LLM=true
 ACTIVE_LLM=openai
 OPENAI_API_KEY=your_api_key_here
+OPENAI_MODEL=gpt-4o       # vision-capable for image analysis
 ```
 
-### LLM Setup (Optional)
-To enable advanced AI capabilities:
+### LLM Setup (Required for Image Analysis)
+To enable advanced AI and computer vision:
 
 1. **OpenAI GPT** (Recommended)
    ```bash
@@ -164,13 +177,11 @@ To enable advanced AI capabilities:
    USE_LLM=true
    ACTIVE_LLM=openai
    OPENAI_API_KEY=sk-your-key-here
-   # Optional: choose latest model
-   OPENAI_MODEL=gpt-4o-mini
+   OPENAI_MODEL=gpt-4o    # for text + vision (image analysis)
 
-   # Other supported examples
-   # OPENAI_MODEL=gpt-4o
+   # Alternatives
+   # OPENAI_MODEL=gpt-4o-mini
    # OPENAI_MODEL=gpt-4-turbo
-   # OPENAI_MODEL=gpt-3.5-turbo
    ```
 
 2. **Anthropic Claude**
@@ -218,21 +229,21 @@ Type: "Help me solve a complex problem"
 
 ```
 Voice_Chatbot/
-├── app.py                 # Main Flask application
-├── nlp_engine.py          # Advanced NLP processing engine
-├── config.py              # Configuration management
-├── requirements.txt       # Python dependencies
-├── test_llm_direct.py     # LLM testing script
-├── env_example.txt        # Environment variables template
-├── .gitignore            # Git ignore file
-├── README.md             # This file
-├── templates/
-│   └── index.html        # Modern web interface
-└── static/
-    ├── css/
-    │   └── style.css     # Beautiful styling
-    └── js/
-        └── app.js        # Frontend logic
+├── main.py                      # Application entry point
+├── requirements.txt             # Python dependencies (incl. Pillow for vision)
+├── config/development/
+│   └── env_example.txt          # Environment variables template
+├── src/voice_chatbot/
+│   ├── api/routes.py            # API routes (incl. /api/analyze-image)
+│   ├── core/app.py              # VoiceChatbot, Flask app
+│   ├── core/config.py           # Configuration
+│   └── services/nlp_engine.py   # NLP + LLM + image analysis
+├── web/
+│   ├── templates/index.html     # Web interface
+│   └── static/
+│       ├── css/style.css        # Styling
+│       └── js/app.js            # Frontend (voice, text, image upload)
+└── tests/
 ```
 
 ## 🔌 API Endpoints
@@ -243,10 +254,11 @@ Voice_Chatbot/
 - `POST /api/stop-listening` - Stop voice recognition
 - `POST /api/process-text` - Process text input
 - `POST /api/speak` - Convert text to speech
+- `POST /api/analyze-image` - Analyze uploaded image (multipart: `image`, optional `prompt`)
 
 ### Analytics & Management
 - `GET /api/status` - Chatbot status
-- `GET /api/conversation-history` - Conversation history
+- `GET /api/conversation-summary` - Conversation history
 - `GET /api/features` - Available features
 
 ## 🧠 Advanced Capabilities
@@ -277,8 +289,9 @@ Voice_Chatbot/
 1. **Header**: Logo, status indicator, and navigation
 2. **Voice Control**: Microphone controls and recording timer
 3. **Text Input**: Direct text message interface
-4. **Feature Showcase**: Interactive feature cards
-5. **Conversation**: Chat history and message display
+4. **Image Analysis (Computer Vision)**: Upload images and optional prompt for AI analysis
+5. **Feature Showcase**: Interactive feature cards
+6. **Conversation**: Chat history and message display
 
 ## 🧪 Testing
 
@@ -289,7 +302,7 @@ python test_llm_direct.py
 
 ### Test API Endpoints
 ```bash
-curl -X POST http://localhost:5001/api/process-text \
+curl -X POST http://localhost:5002/api/process-text \
   -H "Content-Type: application/json" \
   -d '{"text": "Hello, how are you?"}'
 ```
@@ -322,8 +335,8 @@ curl -X POST http://localhost:5001/api/process-text \
 # Install production dependencies
 pip install gunicorn
 
-# Run with Gunicorn
-gunicorn -w 4 -b 0.0.0.0:5001 app:app
+# Run with Gunicorn (use PORT from .env, default 5002)
+gunicorn -w 4 -b 0.0.0.0:5002 main:app
 
 # Environment setup
 export FLASK_ENV=production
@@ -337,8 +350,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 COPY . .
-EXPOSE 5001
-CMD ["python", "app.py"]
+EXPOSE 5002
+CMD ["python", "main.py"]
 ```
 
 ## 📊 Performance

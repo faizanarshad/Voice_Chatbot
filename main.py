@@ -25,6 +25,9 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
+# Ensure logs directory exists
+os.makedirs('logs', exist_ok=True)
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -59,7 +62,7 @@ from voice_chatbot.api.routes import register_routes
 register_routes(app, chatbot)
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5001))
+    port = Config.PORT
     host = os.getenv('HOST', '0.0.0.0')
     
     logger.info(f"🚀 Starting AI Voice Assistant Pro on {host}:{port}")

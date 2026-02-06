@@ -294,6 +294,38 @@ def register_routes(app, chatbot):
             logger.error(f"Error in voice processing: {e}")
             return jsonify({'error': str(e)}), 500
     
+    @app.route('/api/analyze-image', methods=['POST'])
+    def analyze_image():
+        """
+        Analyze an uploaded image with the active LLM (OpenAI vision recommended).
+        Expects multipart/form-data with:
+          - image: file
+          - prompt: optional text prompt (defaults to generic description request)
+        """
+        try:
+            if 'image' not in request.files:
+                return jsonify({'status': 'error', 'message': 'No image file provided'}), 400
+
+            image_file = request.files['image']
+            if image_file.filename == '':
+                return jsonify({'status': 'error', 'message': 'Empty filename for image upload'}), 400
+
+            prompt = request.form.get('prompt', 'Describe this image in detail.')
+            image_bytes = image_file.read()
+
+            if not image_bytes:
+                return jsonify({'status': 'error', 'message': 'Uploaded image is empty'}), 400
+
+            response_text = chatbot.nlp_engine.analyze_image(image_bytes, prompt)
+
+            return jsonify({
+                'status': 'success',
+                'response': response_text
+            })
+        except Exception as e:
+            logger.error(f"Error analyzing image: {e}")
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+
     @app.route('/api/health', methods=['GET'])
     def health_check():
         """Health check endpoint for monitoring"""
