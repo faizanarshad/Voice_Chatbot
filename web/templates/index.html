@@ -66,6 +66,30 @@
                         Send
                     </button>
                 </div>
+
+                <!-- Computer Vision / Image Analysis -->
+                <div class="section-header" style="margin-top: 25px; text-align: left;">
+                    <h2 style="justify-content: flex-start;">
+                        <i class="fas fa-image"></i> Image Analysis (Computer Vision)
+                    </h2>
+                    <p>Upload an image and let the assistant describe or analyze it.</p>
+                </div>
+
+                <div class="text-input-container">
+                    <input type="file" id="imageInput" accept="image/*" class="text-input">
+                </div>
+                <div class="text-input-container">
+                    <input
+                        type="text"
+                        id="imagePrompt"
+                        placeholder="Describe what you want to know about the image (optional)..."
+                        class="text-input"
+                    >
+                    <button id="analyzeImageBtn" class="btn btn-secondary">
+                        <i class="fas fa-search"></i>
+                        Analyze Image
+                    </button>
+                </div>
             </section>
 
             <!-- Features Showcase -->

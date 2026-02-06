@@ -20,3 +20,4 @@ pygame==2.6.1
 pyobjc-framework-Cocoa
 pyobjc-framework-Quartz
 pydub==0.25.1
+Pillow==10.4.0

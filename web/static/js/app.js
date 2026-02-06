@@ -17,6 +17,10 @@ const voiceStatus = document.getElementById('voiceStatus');
 const statusText = document.getElementById('status-text');
 const statusDot = document.getElementById('status-dot');
 const conversation = document.getElementById('conversation');
+// Computer vision elements
+const imageInput = document.getElementById('imageInput');
+const imagePromptInput = document.getElementById('imagePrompt');
+const analyzeImageBtn = document.getElementById('analyzeImageBtn');
 
 // Feature cards
 const featureCards = document.querySelectorAll('.feature-card');
@@ -36,6 +40,11 @@ function initializeApp() {
             sendTextMessage();
         }
     });
+
+    // Image analysis (computer vision)
+    if (analyzeImageBtn) {
+        analyzeImageBtn.addEventListener('click', analyzeImage);
+    }
 
     // Add feature card interactions
     featureCards.forEach(card => {
@@ -288,6 +297,51 @@ function addMessage(sender, content) {
     if (welcomeMessage) {
         welcomeMessage.remove();
     }
+}
+
+// Image analysis / computer vision
+function analyzeImage() {
+    if (!imageInput || !imageInput.files || imageInput.files.length === 0) {
+        showNotification('Please select an image first.', 'error');
+        return;
+    }
+
+    const file = imageInput.files[0];
+    const prompt = (imagePromptInput && imagePromptInput.value.trim())
+        ? imagePromptInput.value.trim()
+        : 'Describe this image and list any important objects you see.';
+
+    // Show in conversation that the user sent an image
+    addMessage('user', `🖼️ Sent an image.\n\nPrompt: ${prompt}`);
+
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('prompt', prompt);
+
+    updateStatus('processing', 'Analyzing image...');
+
+    fetch('/api/analyze-image', {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                addMessage('bot', data.response || 'I analyzed the image, but did not get a detailed response.');
+                showNotification('Image analyzed successfully.', 'success');
+            } else {
+                const msg = data.message || 'Failed to analyze image.';
+                addMessage('bot', msg);
+                showNotification(msg, 'error');
+            }
+            updateStatus('ready', 'Ready');
+        })
+        .catch(error => {
+            console.error('Error analyzing image:', error);
+            addMessage('bot', 'Sorry, I encountered an error while analyzing the image.');
+            showNotification('Error analyzing image.', 'error');
+            updateStatus('ready', 'Ready');
+        });
 }
 
 function formatMessage(content) {

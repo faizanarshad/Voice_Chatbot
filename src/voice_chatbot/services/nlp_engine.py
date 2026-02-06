@@ -4,10 +4,13 @@ import random
 import requests
 import os
 import time
+import base64
+from io import BytesIO
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 import logging
 from dotenv import load_dotenv
+from PIL import Image
 
 # Load environment variables from .env file
 load_dotenv()
@@ -340,6 +343,69 @@ Remember: You're not just answering questions - you're having a meaningful conve
             f"Your message: '{user_input}' - I'm here to help! For significantly enhanced capabilities including detailed explanations, creative solutions, and deep knowledge across all subjects, please configure an LLM API key for advanced AI integration."
         ]
         return random.choice(fallback_responses)
+
+    def analyze_image(self, image_bytes: bytes, prompt: str) -> str:
+        """
+        Analyze an image with the active LLM.
+        Currently implemented for OpenAI vision-capable models (e.g., gpt-4o).
+        """
+        try:
+            if self.active_llm != 'openai' or not self.openai_api_key:
+                return "Image analysis is only available when ACTIVE_LLM=openai and a valid OPENAI_API_KEY is configured."
+
+            # Optionally validate / normalize image with Pillow (guards against invalid uploads)
+            try:
+                img = Image.open(BytesIO(image_bytes))
+                buffered = BytesIO()
+                # Use a common format for compatibility
+                img.convert("RGB").save(buffered, format="JPEG")
+                image_bytes = buffered.getvalue()
+            except Exception as e:
+                logger.warning(f"Failed to normalize image, using raw bytes: {e}")
+
+            # Encode image as base64 data URL for OpenAI vision API
+            encoded_image = base64.b64encode(image_bytes).decode("utf-8")
+            image_url = f"data:image/jpeg;base64,{encoded_image}"
+
+            headers = {
+                "Authorization": f"Bearer {self.openai_api_key}",
+                "Content-Type": "application/json",
+            }
+
+            model = os.getenv("OPENAI_MODEL", "gpt-4o")
+
+            data = {
+                "model": model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": image_url}},
+                        ],
+                    }
+                ],
+                "max_tokens": 500,
+            }
+
+            response = requests.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers=headers,
+                json=data,
+                timeout=30,
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                return result["choices"][0]["message"]["content"].strip()
+
+            logger.error(
+                f"OpenAI vision API error: {response.status_code} - {response.text}"
+            )
+            return "I couldn't analyze the image due to an API error."
+        except Exception as e:
+            logger.error(f"Error during image analysis: {e}")
+            return "I ran into an error while analyzing the image."
 
 class NLPEngine:
     def __init__(self):
@@ -1451,6 +1517,12 @@ Just ask me anything! I'm here to help make your day better and more productive.
     def get_user_preferences(self, user_id: str) -> Dict:
         """Get user preferences"""
         return self.user_preferences.get(user_id, {})
+
+    def analyze_image(self, image_bytes: bytes, prompt: str, user_id: str = 'default') -> str:
+        """
+        Public entry point for image analysis used by the Flask app.
+        """
+        return self.llm.analyze_image(image_bytes, prompt)
 
     def _get_enhanced_calculation_response(self, entities: Dict) -> str:
         """Get enhanced calculation response with advanced math capabilities"""
