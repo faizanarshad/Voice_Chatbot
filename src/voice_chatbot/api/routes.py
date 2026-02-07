@@ -96,6 +96,12 @@ def register_routes(app, chatbot):
             # Process with NLP engine
             response = chatbot.process_nlp(text, user_id)
             
+            # Speak the response aloud (voice control should reply with voice)
+            try:
+                chatbot.speak(response)
+            except Exception as tts_err:
+                logger.warning(f"TTS failed for voice reply: {tts_err}")
+            
             return jsonify({
                 'text': text,
                 'response': response,
@@ -147,10 +153,13 @@ def register_routes(app, chatbot):
     def get_features():
         """Get available features and capabilities"""
         try:
+            lc_agent = getattr(chatbot.nlp_engine, 'langchain_agent', None)
             features = {
                 'voice_recognition': True,
                 'text_to_speech': True,
                 'llm_integration': chatbot.nlp_engine.use_llm,
+                'langchain_agent': chatbot.nlp_engine.use_langchain_agent and lc_agent and getattr(lc_agent, 'enabled', False),
+                'langchain_tools': ['weather', 'calculator', 'current_time', 'web_search'] if (lc_agent and getattr(lc_agent, 'enabled', False)) else [],
                 'conversation_history': True,
                 'intent_recognition': True,
                 'sentiment_analysis': True,

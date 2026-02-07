@@ -14,8 +14,8 @@ AI Voice Assistant Pro is a sophisticated voice-controlled AI assistant that com
 
 ## ✨ Key Features
 
-- 🎤 **Voice Recognition**: High-accuracy speech-to-text conversion
-- 🗣️ **Text-to-Speech**: Natural voice responses with customizable settings
+- 🎤 **Voice Control**: Browser-based recording → speech-to-text → AI response → text-to-speech reply
+- 🗣️ **Text-to-Speech**: Full response spoken aloud (macOS `say` or gTTS); no truncation
 - 🧠 **Advanced NLP**: Intelligent intent recognition and context management
 - 🤖 **LLM Integration**: OpenAI (model configurable), Anthropic Claude, and Ollama support
 - 📷 **Computer Vision**: Upload images and get AI-powered analysis via OpenAI vision (gpt-4o)
@@ -28,22 +28,35 @@ Below is a quick capabilities matrix. Configure via `.env` and use the listed en
 
 | Feature | Status | Engine/Model | Config | Endpoint |
 |---|---|---|---|---|
-| Speech-to-Text (STT) | ✅ | SpeechRecognition (Mic) | — | `/api/start-listening`, `/api/stop-listening` |
+| Speech-to-Text (STT) | ✅ | Browser recording → `/api/process-audio` | ffmpeg for WebM | `/api/process-audio` |
 | Text-to-Speech (TTS) | ✅ | macOS `say` → gTTS fallback | `TTS_RATE`, `TTS_VOLUME` | `/api/speak` |
 | LLM Responses | ✅ | OpenAI (configurable) | `USE_LLM`, `OPENAI_MODEL`, `OPENAI_API_KEY` | `/api/process-text` |
-| Image Analysis (Vision) | ✅ | OpenAI gpt-4o | `USE_LLM`, `ACTIVE_LLM=openai`, `OPENAI_API_KEY` | `POST /api/analyze-image` |
+| Image Analysis (Vision) | ✅ | OpenAI gpt-4o + OpenCV preprocessing | `USE_LLM`, `OPENAI_API_KEY` | `POST /api/analyze-image` |
+| LangGraph Agent (Tools) | ✅ | LangGraph + OpenAI | `USE_LANGCHAIN_AGENT`, `OPENAI_API_KEY` | via `/api/process-text` |
 | Health/Status | ✅ | — | — | `/api/status` |
 
+### LangGraph Agent Tools (optional, efficient)
+When `USE_LANGCHAIN_AGENT=true`, the assistant uses a LangGraph ReAct agent with:
+- **Weather** – Get weather for any location
+- **Calculator** – Evaluate math expressions
+- **Current Time** – Current date and time
+- **Web Search** – Search the web (DuckDuckGo)
+
+Efficiency: fast path for simple time/calc/weather (skips LLM), result caching (30s time, 5min weather), recursion limit (8 steps).
+
 ### Category overview
-- **Voice**: STT via microphone; TTS with macOS `say` primary and gTTS fallback.
+- **Voice**: Browser records mic → `/api/process-audio` → transcription + AI response + TTS reply. Requires ffmpeg.
 - **Intelligence**: OpenAI chat completions with conversation context; model controlled by `OPENAI_MODEL` (gpt-4o for vision).
 - **Computer Vision**: Upload images in the web UI or via API; analyze with custom prompts.
 - **Tools**: Built-in intents (weather, time, jokes, calculations, news stubs).
-- **Web UI**: Mic button, chat feed, image upload, status polling; logs and error surfacing.
+- **Web UI**: Voice (Start/Stop recording), Text & Image flash cards, feature cards (click to prefill), chat feed, status polling.
 - **Ops**: Dockerized deployment, Nginx proxy, health checks, structured logs. Default port **5002** (avoids macOS AirPlay on 5001).
 
 ### Quick usage examples
 ```bash
+# Voice recording (upload audio; returns transcription + response; speaks reply)
+curl -X POST http://localhost:5002/api/process-audio -F "audio=@recording.webm"
+
 # Process a text prompt (LLM)
 curl -X POST http://localhost:5002/api/process-text \
   -H 'Content-Type: application/json' \
@@ -80,10 +93,12 @@ TTS_VOLUME=1.0
 ```
 
 ### Troubleshooting (by feature)
+- **Voice recording**: Requires **ffmpeg** for WebM→WAV conversion. Install: `brew install ffmpeg` (macOS).
+- **Voice control**: Click Start to record, speak, then Stop. The assistant replies with both text and voice (TTS).
 - **STT (mic)**: Ensure browser mic permissions are granted; close other apps using the mic.
-- **TTS (macOS say)**: Very long texts may be truncated intentionally to avoid timeouts.
+- **TTS**: Full responses are spoken in chunks (no truncation). Uses macOS `say` or gTTS.
 - **LLM**: Verify `.env` keys; confirm `OPENAI_MODEL` and network access.
-- **Image Analysis**: Requires `USE_LLM=true`, `ACTIVE_LLM=openai`, valid `OPENAI_API_KEY`, and `OPENAI_MODEL=gpt-4o` (or vision-capable model).
+- **Image Analysis**: OpenCV preprocesses images (resize, denoise, contrast) before vision API. Requires `USE_LLM=true`, `ACTIVE_LLM=openai`, `OPENAI_API_KEY`, and vision-capable model (e.g. gpt-4o).
 - **Port in use**: Set `PORT=5002` in `.env` if 5001 is taken (e.g. by macOS AirPlay).
 
 ### Roadmap (next upgrades)
@@ -97,7 +112,8 @@ TTS_VOLUME=1.0
 
 ### Prerequisites
 - Python 3.8 or higher
-- macOS (for optimal TTS performance)
+- macOS (for optimal TTS: system `say` command) or Linux/Windows (gTTS fallback)
+- **ffmpeg** for voice recording (WebM→WAV): `brew install ffmpeg` (macOS)
 - Microphone and speakers
 - Internet connection
 
@@ -122,14 +138,21 @@ TTS_VOLUME=1.0
    # Edit .env with your API keys (optional)
    ```
 
-4. **Run the Application**
+4. **Install ffmpeg** (required for voice recording)
+   ```bash
+   brew install ffmpeg   # macOS
+   ```
+
+5. **Run the Application**
    ```bash
    python main.py
    ```
 
-5. **Access the Interface**
+6. **Access the Interface**
    - Open your browser to `http://localhost:5002` (default port; configurable via `PORT` in `.env`)
-   - Start using voice commands, text chat, or upload images for AI analysis
+   - **Voice**: Click Start → speak → Click Stop. You'll get a text reply + voice reply (TTS).
+   - **Text**: Type in the Text Input card and click Send.
+   - **Image**: Upload an image in the Image Analysis card, add an optional prompt, and click Analyze.
 
 ## 🐳 Docker Deployment (Recommended)
 
@@ -166,6 +189,9 @@ USE_LLM=true
 ACTIVE_LLM=openai
 OPENAI_API_KEY=your_api_key_here
 OPENAI_MODEL=gpt-4o       # vision-capable for image analysis
+
+# LangGraph Agent (tools: weather, calculator, time, web search)
+USE_LANGCHAIN_AGENT=false
 ```
 
 ### LLM Setup (Required for Image Analysis)
@@ -205,7 +231,13 @@ To enable advanced AI and computer vision:
 
 ## 🎮 Usage Examples
 
-### Voice Commands
+### Voice Control
+1. Click **Start Listening**
+2. Speak your full message (record as long as you need)
+3. Click **Stop**
+4. Receive transcription + AI reply in text **and voice** (TTS)
+
+### Voice Command Examples
 ```
 🎵 Music: "Play some rock music", "Volume up", "Next track"
 📅 Calendar: "Schedule meeting tomorrow at 3 PM"
@@ -250,8 +282,7 @@ Voice_Chatbot/
 
 ### Core Endpoints
 - `GET /` - Web interface
-- `POST /api/start-listening` - Start voice recognition
-- `POST /api/stop-listening` - Stop voice recognition
+- `POST /api/process-audio` - Process voice recording (multipart: `audio` file). Returns transcription + AI response; speaks reply via TTS.
 - `POST /api/process-text` - Process text input
 - `POST /api/speak` - Convert text to speech
 - `POST /api/analyze-image` - Analyze uploaded image (multipart: `image`, optional `prompt`)
@@ -286,12 +317,12 @@ Voice_Chatbot/
 - **Color Scheme**: Purple-blue gradients with modern aesthetics
 
 ### Interface Sections
-1. **Header**: Logo, status indicator, and navigation
-2. **Voice Control**: Microphone controls and recording timer
-3. **Text Input**: Direct text message interface
-4. **Image Analysis (Computer Vision)**: Upload images and optional prompt for AI analysis
-5. **Feature Showcase**: Interactive feature cards
-6. **Conversation**: Chat history and message display
+1. **Header**: Logo, status indicator
+2. **Voice Control**: Start/Stop recording, timer. Records in browser; speaks AI reply aloud.
+3. **Text Input** (card): Type and send messages
+4. **Image Analysis** (card): Upload images, optional prompt, Analyze button
+5. **Feature Showcase**: Click cards to prefill sample prompts and try features
+6. **Conversation**: Chat history with readable formatting
 
 ## 🧪 Testing
 
@@ -315,7 +346,8 @@ curl -X POST http://localhost:5002/api/process-text \
    - The application automatically falls back to macOS system 'say' command
    - This is expected behavior on macOS
 
-2. **Microphone Not Working**
+2. **Microphone / Voice Recording Not Working**
+   - Install ffmpeg: `brew install ffmpeg` (macOS)
    - Check browser permissions for microphone access
    - Ensure microphone is connected and working
 

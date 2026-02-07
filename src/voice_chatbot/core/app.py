@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import speech_recognition as sr
-import pyttsx3
 import json
 import os
 import threading
@@ -24,9 +23,10 @@ except ImportError:
     GTTS_AVAILABLE = False
 
 try:
-    import pyobjc
+    import pyttsx3
     PYTTSX3_AVAILABLE = True
 except ImportError:
+    pyttsx3 = None
     PYTTSX3_AVAILABLE = False
 
 # Load environment variables
@@ -187,22 +187,75 @@ class VoiceChatbot:
     def listen_for_speech_from_file(self, audio_file):
         """Listen for speech from uploaded audio file and convert to text"""
         try:
+            import io
+            
             logger.info(f"Processing audio file: {audio_file.filename}")
             
-            # Since the microphone recording is already working, we can use that instead
-            # The issue is with the file-based processing, so let's use the direct microphone approach
-            logger.info("Using direct microphone processing instead of file processing")
-            
-            # Try to process with the existing microphone-based method
-            text = self.listen_for_speech()
-            
-            if text:
-                logger.info(f"Recognized from direct processing: {text}")
-                return text.lower()
-            else:
-                logger.info("Could not process audio with direct method")
+            # Read uploaded audio bytes
+            audio_bytes = audio_file.read()
+            if not audio_bytes:
+                logger.error("Uploaded audio file is empty")
                 return None
             
+            # Determine format from filename or content
+            filename = (audio_file.filename or '').lower()
+            if filename.endswith('.webm') or filename.endswith('.opus'):
+                audio_format = 'webm'
+            elif filename.endswith('.wav'):
+                audio_format = 'wav'
+            elif filename.endswith('.mp4') or filename.endswith('.m4a'):
+                audio_format = 'mp4'
+            else:
+                audio_format = 'webm'  # Browser typically sends WebM
+            
+            try:
+                from pydub import AudioSegment
+                # Load audio from bytes
+                audio_segment = AudioSegment.from_file(
+                    io.BytesIO(audio_bytes),
+                    format=audio_format
+                )
+                # Export to WAV for SpeechRecognition (16kHz mono)
+                audio_segment = audio_segment.set_frame_rate(16000).set_channels(1)
+                wav_buffer = io.BytesIO()
+                audio_segment.export(wav_buffer, format='wav')
+                wav_buffer.seek(0)
+            except Exception as conv_err:
+                logger.error(f"PyDub conversion failed: {conv_err}. Install ffmpeg: brew install ffmpeg")
+                return None
+            
+            # Use SpeechRecognition with the WAV file
+            # Chunk long audio (Google API ~60s limit) for full conversation capture
+            transcripts = []
+            with sr.AudioFile(wav_buffer) as source:
+                while True:
+                    try:
+                        audio_data = self.recognizer.record(source, duration=55)
+                        if len(audio_data.get_raw_data()) < 1000:
+                            break  # No significant audio left
+                        chunk_text = self.recognizer.recognize_google(audio_data)
+                        if chunk_text:
+                            transcripts.append(chunk_text)
+                    except sr.UnknownValueError:
+                        pass
+                    except sr.RequestError as e:
+                        logger.error(f"Speech API error: {e}")
+                        break
+                    except Exception:
+                        break
+            
+            if not transcripts:
+                return None
+            text = ' '.join(transcripts)
+            logger.info(f"Recognized from file: {text[:100]}...")
+            return text.lower()
+            
+        except sr.UnknownValueError:
+            logger.warning("Could not understand audio in file")
+            return None
+        except sr.RequestError as e:
+            logger.error(f"Speech recognition request failed: {e}")
+            return None
         except Exception as e:
             logger.error(f"Error processing audio file: {e}")
             return None
@@ -238,14 +291,13 @@ class VoiceChatbot:
                     logger.info("🍎 Using macOS system 'say' command...")
                     import subprocess
                     
-                    # Truncate text if too long for say command
-                    if len(cleaned_text) > 200:
-                        truncated_text = cleaned_text[:200] + "..."
-                        logger.info(f"🍎 Text truncated from {len(cleaned_text)} to {len(truncated_text)} characters")
-                        cleaned_text = truncated_text
-                    
-                    result = subprocess.run(['say', cleaned_text], check=True, timeout=60, capture_output=True, text=True)
-                    logger.info(f"✅ macOS 'say' command completed successfully (return code: {result.returncode})")
+                    # Speak in chunks for long text (full answer, no truncation)
+                    max_chunk = 1500  # Characters per chunk; say handles this well
+                    chunks = [cleaned_text[i:i + max_chunk] for i in range(0, len(cleaned_text), max_chunk)]
+                    for chunk in chunks:
+                        if chunk.strip():
+                            subprocess.run(['say', chunk], check=True, timeout=90, capture_output=True, text=True)
+                    logger.info("✅ macOS 'say' command completed successfully")
                     return
                     
             except Exception as e:

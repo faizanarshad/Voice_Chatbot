@@ -22,8 +22,8 @@ const imageInput = document.getElementById('imageInput');
 const imagePromptInput = document.getElementById('imagePrompt');
 const analyzeImageBtn = document.getElementById('analyzeImageBtn');
 
-// Feature cards
-const featureCards = document.querySelectorAll('.feature-card');
+// Feature cards - selected inside DOMContentLoaded to ensure DOM is ready
+let featureCards = [];
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -31,6 +31,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
+    // Reselect feature cards after DOM is ready
+    featureCards = document.querySelectorAll('.feature-card');
     // Add event listeners
     startBtn.addEventListener('click', startVoiceListening);
     stopBtn.addEventListener('click', stopVoiceListening);
@@ -106,53 +108,11 @@ async function startVoiceListening() {
         recordingTimer = setInterval(updateTimer, 1000);
         
         // Update status
-        updateStatus('listening', 'Listening...');
-        voiceStatus.textContent = 'Listening... Speak now!';
+        updateStatus('listening', 'Recording...');
+        voiceStatus.textContent = 'Recording... Speak your full message, then click Stop when done.';
         
-        // Start recording
-        mediaRecorder.start();
-        
-        // Make API call to start listening (this will handle the speech recognition)
-        fetch('/api/start-listening', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Voice processing result:', data);
-            
-            // If we got text and response, process it
-            if (data.text && data.response) {
-                // Stop the recording UI
-                stopVoiceListening();
-                
-                // Add messages to conversation
-                addMessage('user', data.text);
-                addMessage('bot', data.response);
-                
-                // Update status
-                voiceStatus.textContent = 'Ready for next command';
-                updateStatus('ready', 'Ready');
-            } else if (data.message) {
-                // Handle no speech detected
-                stopVoiceListening();
-                voiceStatus.textContent = data.message;
-                updateStatus('ready', 'Ready');
-            } else {
-                // Handle error case
-                stopVoiceListening();
-                voiceStatus.textContent = 'Error processing speech';
-                updateStatus('ready', 'Ready');
-            }
-        })
-        .catch(error => {
-            console.error('Error starting listening:', error);
-            stopVoiceListening();
-            voiceStatus.textContent = 'Error processing speech';
-            updateStatus('ready', 'Ready');
-        });
+        // Start recording - user controls when to stop
+        mediaRecorder.start(1000);  // Collect data every 1 second for long recordings
         
     } catch (error) {
         console.error('Error accessing microphone:', error);
@@ -213,15 +173,50 @@ function stopVoiceListening() {
 }
 
 function processAudioRecording() {
-    // Since the microphone recording is already working, we don't need to process the audio file
-    // The speech recognition is happening in real-time during recording
-    // Just reset the audio chunks and update status
-    audioChunks = [];
+    if (audioChunks.length === 0) {
+        stopVoiceListening();
+        voiceStatus.textContent = 'No audio recorded';
+        updateStatus('ready', 'Ready');
+        return;
+    }
     
-    // The actual speech processing happens during the microphone recording
-    // and the response should already be handled by the existing flow
-    voiceStatus.textContent = 'Voice recording completed';
-    updateStatus('ready', 'Ready');
+    voiceStatus.textContent = 'Processing your speech...';
+    updateStatus('processing', 'Processing...');
+    
+    const mimeType = mediaRecorder && mediaRecorder.mimeType ? mediaRecorder.mimeType : 'audio/webm';
+    const extension = mimeType.includes('webm') ? 'webm' : mimeType.includes('mp4') ? 'mp4' : 'webm';
+    const blob = new Blob(audioChunks, { type: mimeType });
+    const formData = new FormData();
+    formData.append('audio', blob, `recording.${extension}`);
+    
+    fetch('/api/process-audio', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        stopVoiceListening();
+        if (data.text && data.response) {
+            addMessage('user', data.text);
+            addMessage('bot', data.response);
+            voiceStatus.textContent = 'Ready for next command';
+        } else if (data.error) {
+            voiceStatus.textContent = data.error;
+            addMessage('bot', 'Could not understand the recording. Try speaking clearly and avoid background noise.');
+        } else {
+            voiceStatus.textContent = 'Could not process audio';
+        }
+        updateStatus('ready', 'Ready');
+    })
+    .catch(error => {
+        console.error('Error processing audio:', error);
+        stopVoiceListening();
+        voiceStatus.textContent = 'Error processing speech';
+        addMessage('bot', 'Sorry, I encountered an error processing your voice recording.');
+        updateStatus('ready', 'Ready');
+    });
+    
+    audioChunks = [];  // Clear for next recording
 }
 
 function updateTimer() {
@@ -345,12 +340,15 @@ function analyzeImage() {
 }
 
 function formatMessage(content) {
-    // Convert markdown-like formatting to HTML
+    // Convert markdown-like formatting to HTML for readable display
     return content
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/`(.*?)`/g, '<code>$1</code>')
-        .replace(/\n/g, '<br>');
+        .replace(/\n\n+/g, '</p><p>')
+        .replace(/\n/g, '<br>')
+        .replace(/^/, '<p>')
+        .replace(/$/, '</p>');
 }
 
 // Status management
@@ -375,7 +373,18 @@ function pollStatus() {
     }, 2000);
 }
 
-// Feature interactions
+// Feature interactions - sample prompts to try when a feature is clicked
+const featureSamplePrompts = {
+    'music_control': 'Play some music',
+    'calendar': 'What\'s on my calendar today?',
+    'weather_detailed': 'What\'s the weather like today?',
+    'news_category': 'What are the latest tech news?',
+    'calculator_advanced': 'What is 25 multiplied by 17?',
+    'notes': 'Create a note: buy groceries',
+    'tasks': 'Add a task: finish the report by Friday',
+    'web_search': 'Search for Python Flask tutorial'
+};
+
 function showFeatureInfo(feature) {
     const featureNames = {
         'music_control': 'Music Control',
@@ -401,9 +410,17 @@ function showFeatureInfo(feature) {
     
     const featureName = featureNames[feature] || 'Feature';
     const description = featureDescriptions[feature] || 'This feature helps you with various tasks.';
+    const samplePrompt = featureSamplePrompts[feature];
+    
+    // Prefill text input with a sample prompt so user can try the feature immediately
+    if (textInput && samplePrompt) {
+        textInput.value = samplePrompt;
+        textInput.focus();
+        showNotification(`Try: "${samplePrompt}" — Press Enter or click Send`, 'info');
+    }
     
     // Add a demo message for the feature
-    addMessage('bot', `🎯 **${featureName}**\n\n${description}\n\nTry saying something like:\n• "Show me ${featureName.toLowerCase()}"\n• "Help me with ${featureName.toLowerCase()}"\n• "What can you do with ${featureName.toLowerCase()}?"`);
+    addMessage('bot', `🎯 **${featureName}**\n\n${description}\n\nI've added a sample prompt above — just press Enter or click Send to try it!`);
     
     // Highlight the feature card
     featureCards.forEach(card => {

@@ -12,6 +12,8 @@ import logging
 from dotenv import load_dotenv
 from PIL import Image
 
+from ..utils.image_preprocessing import preprocess_for_vision
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -354,6 +356,9 @@ Remember: You're not just answering questions - you're having a meaningful conve
             if self.active_llm != 'openai' or not self.openai_api_key:
                 return "Image analysis is only available when ACTIVE_LLM=openai and a valid OPENAI_API_KEY is configured."
 
+            # OpenCV preprocessing: resize, denoise, contrast, format normalization
+            image_bytes = preprocess_for_vision(image_bytes)
+
             # Optionally validate / normalize image with Pillow (guards against invalid uploads)
             try:
                 img = Image.open(BytesIO(image_bytes))
@@ -438,6 +443,13 @@ class NLPEngine:
         self.news_api_key = "demo"     # You can replace with actual API key
         self.llm = LLMIntegration()
         self.use_llm = os.getenv('USE_LLM', 'false').lower() == 'true'
+        self.use_langchain_agent = os.getenv('USE_LANGCHAIN_AGENT', 'false').lower() == 'true'
+        try:
+            from .langchain_agent import LangChainAgent
+            self.langchain_agent = LangChainAgent()
+        except Exception as e:
+            logger.warning(f"LangChain agent not available: {e}")
+            self.langchain_agent = None
         
     def _load_intent_patterns(self) -> Dict[str, List[str]]:
         """Load intent recognition patterns"""
@@ -1349,6 +1361,15 @@ Just ask me anything! I'm here to help make your day better and more productive.
         if self.conversation_history:
             user_input = self.conversation_history[-1].get('text', '')
         
+        # LangChain agent with tools (weather, search, calculator, time) - when enabled
+        if self.use_langchain_agent and self.langchain_agent and self.langchain_agent.enabled and user_input:
+            try:
+                agent_response = self.langchain_agent.run(user_input)
+                if agent_response and "not available" not in agent_response.lower():
+                    return agent_response
+            except Exception as e:
+                logger.warning(f"LangChain agent failed, falling back: {e}")
+
         # Enhanced LLM processing for more intelligent responses
         if self.use_llm and user_input:
             try:

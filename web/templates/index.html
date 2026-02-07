@@ -52,43 +52,50 @@
                 </div>
             </section>
 
-            <!-- Text Input Section -->
-            <section class="text-section">
-                <div class="section-header">
-                    <h2><i class="fas fa-keyboard"></i> Text Input</h2>
-                    <p>Type your questions or commands directly</p>
-                </div>
-                
-                <div class="text-input-container">
-                    <input type="text" id="textInput" placeholder="Type your message here..." class="text-input">
-                    <button id="sendBtn" class="btn btn-secondary">
-                        <i class="fas fa-paper-plane"></i>
-                        Send
-                    </button>
-                </div>
-
-                <!-- Computer Vision / Image Analysis -->
-                <div class="section-header" style="margin-top: 25px; text-align: left;">
-                    <h2 style="justify-content: flex-start;">
-                        <i class="fas fa-image"></i> Image Analysis (Computer Vision)
-                    </h2>
-                    <p>Upload an image and let the assistant describe or analyze it.</p>
+            <!-- Input Cards Section - Two Flash Cards -->
+            <section class="input-cards-section">
+                <!-- Text Input Card -->
+                <div class="input-card">
+                    <div class="input-card-header">
+                        <i class="fas fa-keyboard"></i>
+                        <h3>Text Input</h3>
+                        <p>Type your questions or commands directly</p>
+                    </div>
+                    <div class="input-card-body">
+                        <div class="text-input-container">
+                            <input type="text" id="textInput" placeholder="Type your message here..." class="text-input">
+                            <button id="sendBtn" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i>
+                                Send
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="text-input-container">
-                    <input type="file" id="imageInput" accept="image/*" class="text-input">
-                </div>
-                <div class="text-input-container">
-                    <input
-                        type="text"
-                        id="imagePrompt"
-                        placeholder="Describe what you want to know about the image (optional)..."
-                        class="text-input"
-                    >
-                    <button id="analyzeImageBtn" class="btn btn-secondary">
-                        <i class="fas fa-search"></i>
-                        Analyze Image
-                    </button>
+                <!-- Image Analysis Card -->
+                <div class="input-card">
+                    <div class="input-card-header">
+                        <i class="fas fa-image"></i>
+                        <h3>Image Analysis</h3>
+                        <p>Upload an image and let the assistant describe or analyze it</p>
+                    </div>
+                    <div class="input-card-body">
+                        <div class="text-input-container">
+                            <input type="file" id="imageInput" accept="image/*" class="text-input file-input">
+                        </div>
+                        <div class="text-input-container">
+                            <input
+                                type="text"
+                                id="imagePrompt"
+                                placeholder="What do you want to know about the image? (optional)"
+                                class="text-input"
+                            >
+                            <button id="analyzeImageBtn" class="btn btn-primary">
+                                <i class="fas fa-search"></i>
+                                Analyze
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </section>
 

@@ -13,10 +13,10 @@ class Config:
     HOST = os.getenv('HOST', '0.0.0.0')
     PORT = int(os.getenv('PORT', 5002))  # 5001 often used by macOS AirPlay
     
-    # Speech Recognition settings
-    SPEECH_RECOGNITION_TIMEOUT = int(os.getenv('SPEECH_RECOGNITION_TIMEOUT', 5))
-    SPEECH_RECOGNITION_PHRASE_TIME_LIMIT = int(os.getenv('SPEECH_RECOGNITION_PHRASE_TIME_LIMIT', 10))
-    SPEECH_RECOGNITION_AMBIENT_NOISE_DURATION = int(os.getenv('SPEECH_RECOGNITION_AMBIENT_NOISE_DURATION', 1))
+    # Speech Recognition settings (increased for full conversation capture)
+    SPEECH_RECOGNITION_TIMEOUT = int(os.getenv('SPEECH_RECOGNITION_TIMEOUT', 10))
+    SPEECH_RECOGNITION_PHRASE_TIME_LIMIT = int(os.getenv('SPEECH_RECOGNITION_PHRASE_TIME_LIMIT', 45))
+    SPEECH_RECOGNITION_AMBIENT_NOISE_DURATION = int(os.getenv('SPEECH_RECOGNITION_AMBIENT_NOISE_DURATION', 2))
     
     # Text-to-Speech settings
     TTS_RATE = int(os.getenv('TTS_RATE', 150))  # Medium speed for better flow
